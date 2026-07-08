@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>San Cristóbal · Un Delirio Turístico</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f6f4ee; --card:#ffffff; --text:#1a2e22; --muted:#6b7d70; --line:#e4e2d8;
+  --green:#0b3d22; --green-light:#145c34; --green-text:#173f27;
+  --terracotta:#b5481a; --terracotta-light:#d05f28;
+  --mustard:#e8a93f; --mustard-light:#f0bc63;
+  --soft-green:#eef6f0; --soft-terracotta:#fdf0e8; --soft-mustard:#fdf5e6; --soft-red:#fef2f2;
+  --shadow-sm:0 1px 3px rgba(11,61,34,0.08); --shadow:0 4px 16px rgba(11,61,34,0.10); --shadow-lg:0 10px 36px rgba(11,61,34,0.18);
+  --radius:14px; --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ===== LOGIN ===== */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:linear-gradient(160deg,var(--green) 0%,#0e4a29 55%,var(--terracotta) 180%);}
+.login-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow-lg);
+  padding:0;width:420px;max-width:100%;overflow:hidden;}
+.login-banner{width:100%;display:block;}
+.login-body{padding:32px 36px 36px;}
+.login-title{font-size:19px;font-weight:700;text-align:center;margin-bottom:4px;color:var(--green-text);}
+.login-sub{font-size:12.5px;color:var(--muted);text-align:center;margin-bottom:26px;
+  text-transform:uppercase;letter-spacing:0.6px;font-weight:600;}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;}
+input,select{width:100%;border:1px solid #d8d5c9;border-radius:var(--radius-sm);padding:10px 13px;
+  font-size:13.5px;font-family:inherit;color:var(--text);background:#fff;outline:none;
+  transition:border-color .2s,box-shadow .2s;}
+input:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgba(181,72,26,0.12);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;
+  border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;font-family:inherit;border:none;
+  cursor:pointer;transition:all .18s ease;white-space:nowrap;}
+.btn-primary{background:var(--terracotta);color:#fff;width:100%;margin-top:4px;}
+.btn-primary:hover{background:var(--terracotta-light);}
+.msg{font-size:12px;font-weight:600;color:var(--terracotta);text-align:center;margin-top:10px;min-height:16px;}
+.spinner{display:none;text-align:center;font-size:12px;color:var(--muted);margin-top:8px;}
+
+/* ===== HERO BANNER (post-login) ===== */
+.hero{width:100%;position:relative;line-height:0;}
+.hero img{width:100%;display:block;}
+
+/* ===== TOPBAR ===== */
+.topbar{background:var(--green);color:#fff;padding:0 28px;height:54px;display:flex;
+  align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 12px rgba(11,61,34,0.30);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:13.5px;font-weight:700;}
+.topbar-sub{font-size:11.5px;opacity:0.75;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.topbar-badge{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);
+  padding:5px 13px;border-radius:999px;font-size:11.5px;font-weight:600;}
+.btn-logout{background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.3);
+  padding:6px 13px;border-radius:999px;font-size:11.5px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:background .15s;}
+.btn-logout:hover{background:rgba(255,255,255,0.22);}
+
+/* ===== TABS ===== */
+.tabs-wrap{background:var(--card);border-bottom:2px solid var(--line);padding:0 20px;
+  display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tabs-wrap::-webkit-scrollbar{display:none;}
+.tab-btn{padding:14px 18px;font-size:12.5px;font-weight:700;font-family:inherit;background:none;
+  border:none;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;transition:all .18s;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.tab-btn:hover{color:var(--terracotta);}
+.tab-btn.active{color:var(--terracotta);border-bottom-color:var(--terracotta);}
+.tab-count{background:var(--soft-terracotta);color:var(--terracotta);font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:999px;}
+.tab-btn.active .tab-count{background:var(--terracotta);color:#fff;}
+
+/* ===== APP ===== */
+.app{max-width:1400px;margin:0 auto;padding:22px 20px 50px;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:240px;max-width:420px;}
+.search-wrap input{border-radius:999px;padding:10px 16px 10px 38px;box-shadow:var(--shadow-sm);}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none;}
+.result-count{font-size:12px;color:var(--muted);font-weight:600;}
+
+/* ===== TABLE ===== */
+.table-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);overflow:hidden;}
+.table-scroll{overflow-x:auto;max-width:100%;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--soft-green);color:var(--green-text);font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.4px;padding:11px 14px;border-bottom:2px solid var(--line);
+  text-align:left;white-space:nowrap;position:sticky;top:0;z-index:2;}
+td{padding:10px 14px;border-bottom:1px solid #f1efe8;vertical-align:top;white-space:nowrap;
+  max-width:260px;overflow:hidden;text-overflow:ellipsis;}
+tbody tr:hover td{background:#fbfaf6;}
+th:first-child,td:first-child{position:sticky;left:0;background:var(--card);z-index:1;
+  border-right:1px solid var(--line);font-weight:600;}
+th:first-child{background:var(--soft-green);z-index:3;}
+tbody tr:hover td:first-child{background:#fbfaf6;}
+td a{color:var(--terracotta);text-decoration:none;font-weight:600;}
+td a:hover{text-decoration:underline;}
+.cell-empty{color:#c3c0b4;}
+
+/* ===== STATES ===== */
+.loading{text-align:center;padding:60px 20px;color:var(--muted);}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--terracotta);
+  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.alert-error{background:var(--soft-red);border:1px solid #fecaca;color:#991b1b;
+  border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;font-weight:600;margin:16px 0;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+@media(max-width:720px){
+  .topbar{padding:0 16px;}
+  .topbar-sub{display:none;}
+  .tabs-wrap{padding:0 12px;}
+  .app{padding:16px 12px 40px;}
+  .login-body{padding:26px 22px 30px;}
+  .login-card{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <img class="login-banner" src="https://lh3.googleusercontent.com/d/12OmYXr4XcY_MHdG5a40lwEyk1VJPf-as" alt="San Cristóbal - Un Delirio Turístico"
+         onerror="this.style.display='none';">
+    <div class="login-body">
+      <div class="login-title">Panel de Gestión</div>
+      <div class="login-sub">San Cristóbal · Un Delirio Turístico</div>
+
+      <div class="login-field">
+        <label>Usuario</label>
+        <input type="text" id="loginUsuario" placeholder="Tu usuario"
+               onkeydown="if(event.key==='Enter') document.getElementById('loginClave').focus()">
+      </div>
+      <div class="login-field">
+        <label>Contraseña</label>
+        <input type="password" id="loginClave" placeholder="Tu contraseña"
+               onkeydown="if(event.key==='Enter') ejecutarLogin()">
+      </div>
+
+      <button class="btn btn-primary" onclick="ejecutarLogin()">Ingresar →</button>
+      <div id="msgLogin" class="msg"></div>
+      <div class="spinner" id="spinLogin">⏳ Validando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP (oculta hasta login) ============ -->
+<div id="appRoot" style="display:none;">
+
+  <div class="hero">
+    <img src="https://lh3.googleusercontent.com/d/12OmYXr4XcY_MHdG5a40lwEyk1VJPf-as" alt="San Cristóbal - Un Delirio Turístico"
+         onerror="this.style.display='none';">
+  </div>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-title">Panel de Gestión</div>
+        <div class="topbar-sub">San Cristóbal · Un Delirio Turístico</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-badge" id="topbarUsuario">👤 admin</span>
+      <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs-wrap">
+    <button class="tab-btn active" onclick="switchTab('delirio')">
+      🌄 Delirio Turístico
+      <span class="tab-count" id="count-delirio">—</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('simposio')">
+      🎓 Simposio y Fortalecimiento
+      <span class="tab-count" id="count-simposio">—</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('rutas')">
+      🥾 Rutas Turísticas
+      <span class="tab-count" id="count-rutas">—</span>
+    </button>
+  </div>
+
+  <div class="app">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar en esta hoja..." oninput="filterRows()">
+      </div>
+      <div class="result-count" id="resultCount"></div>
+    </div>
+
+    <div class="tab-panel active" id="panel-delirio">
+      <div class="loading" id="loading-delirio"><div class="loading-spinner"></div>Cargando datos...</div>
+      <div class="table-card" id="tablecard-delirio" style="display:none;">
+        <div class="table-scroll"><table id="table-delirio"></table></div>
+      </div>
+      <div class="empty" id="empty-delirio" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
+    </div>
+
+    <div class="tab-panel" id="panel-simposio">
+      <div class="loading" id="loading-simposio"><div class="loading-spinner"></div>Cargando datos...</div>
+      <div class="table-card" id="tablecard-simposio" style="display:none;">
+        <div class="table-scroll"><table id="table-simposio"></table></div>
+      </div>
+      <div class="empty" id="empty-simposio" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
+    </div>
+
+    <div class="tab-panel" id="panel-rutas">
+      <div class="loading" id="loading-rutas"><div class="loading-spinner"></div>Cargando datos...</div>
+      <div class="table-card" id="tablecard-rutas" style="display:none;">
+        <div class="table-scroll"><table id="table-rutas"></table></div>
+      </div>
+      <div class="empty" id="empty-rutas" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/***********************
+ * USUARIOS DEL SISTEMA
+ * Agregar, quitar o cambiar clave aquí
+ ***********************/
+var ADMIN_USUARIOS = [
+  { usuario: 'admin', clave: 'sancristobal2026' }
+];
+
+function validarLoginAdmin(usuario, clave) {
+  if (!usuario || !clave) return { ok: false };
+  var u = String(usuario).trim().toLowerCase();
+  var c = String(clave).trim();
+  var encontrado = ADMIN_USUARIOS.find(function(a){
+    return String(a.usuario).trim().toLowerCase() === u && String(a.clave).trim() === c;
+  });
+  return { ok: !!encontrado, usuario: encontrado ? encontrado.usuario : null };
+}
+
+function showMsg(id, text, ok) {
+  var el = document.getElementById(id);
+  el.textContent = text;
+  el.style.color = ok ? '#166534' : '#b5481a';
+}
+function spin(id, on) { document.getElementById(id).style.display = on ? 'block' : 'none'; }
+
+function ejecutarLogin() {
+  var usuario = document.getElementById('loginUsuario').value.trim();
+  var clave   = document.getElementById('loginClave').value.trim();
+  if (!usuario || !clave) { showMsg('msgLogin', 'Ingresa usuario y contraseña.', false); return; }
+
+  spin('spinLogin', true);
+  setTimeout(function(){
+    var data = validarLoginAdmin(usuario, clave);
+    spin('spinLogin', false);
+    if (!data.ok) { showMsg('msgLogin', 'Usuario o contraseña incorrectos.', false); return; }
+    sessionStorage.setItem('sgsc_admin', data.usuario);
+    activarApp(data.usuario);
+  }, 300);
+}
+
+function activarApp(usuario) {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('topbarUsuario').textContent = '👤 ' + usuario;
+  cargarTodo();
+}
+
+function cerrarSesion() {
+  sessionStorage.removeItem('sgsc_admin');
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('loginUsuario').value = '';
+  document.getElementById('loginClave').value = '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var sesion = sessionStorage.getItem('sgsc_admin');
+  if (sesion) activarApp(sesion);
+});
+
+/***********************
+ * DATOS — Google Sheets (CSV publicado, en vivo)
+ ***********************/
+var CSV_URLS = {
+  delirio:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqZ5zncTvdvHMOnLuPSlFgFOxnU0NddjhTxU2GPhFuj1V3cuLav8d2uUbGpn4Pk1Taf73D13GFDXBW/pub?gid=200425436&single=true&output=csv",
+  simposio: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRmCYve8OoB3lPMj08sjroaJyWOfH8o51M-9Kvy5DYbUVHVFxtmWr4BBSNBJWWVTPT8d_USQD0CBXcO/pub?output=csv",
+  rutas:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnoSaOqdTGB5StRrr8pVoDC9hhhMkNbeJ0mACMR8pAiwuTKjAAUThQTUagyyJAcKLXo-tTzZusLZMc/pub?output=csv"
+};
+
+var DATA = { delirio: [], simposio: [], rutas: [] };
+var HEADERS = { delirio: [], simposio: [], rutas: [] };
+var currentTab = "delirio";
+
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, "");
+  var rows = [];
+  var cur = "", row = [], inQ = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i], next = text[i+1];
+    if (inQ) {
+      if (ch === '"' && next === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQ = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { inQ = true; }
+      else if (ch === ',') { row.push(cur); cur = ""; }
+      else if (ch === '\r') { /* skip */ }
+      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ""; }
+      else { cur += ch; }
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(c){ return c.trim() !== ""; }); });
+}
+
+function toObjects(rows) {
+  if (rows.length < 1) return { headers: [], data: [] };
+  var headers = rows[0].map(function(h){ return h.trim(); });
+  var data = [];
+  for (var i = 1; i < rows.length; i++) {
+    var obj = {};
+    headers.forEach(function(h, idx){ obj[h] = (rows[i][idx] || "").trim(); });
+    data.push(obj);
+  }
+  return { headers: headers, data: data };
+}
+
+function isUrl(v) { return /^https?:\/\//i.test(v); }
+
+function cellHtml(v) {
+  if (!v) return '<span class="cell-empty">—</span>';
+  if (isUrl(v)) return '<a href="'+v+'" target="_blank" rel="noopener">Ver ↗</a>';
+  return escapeHtml(v);
+}
+function escapeHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderTable(tab) {
+  var headers = HEADERS[tab];
+  var data = DATA[tab];
+  var table = document.getElementById("table-" + tab);
+  var thead = "<thead><tr>" + headers.map(function(h){ return "<th>"+escapeHtml(h)+"</th>"; }).join("") + "</tr></thead>";
+  var tbody = "<tbody>" + data.map(function(row, i){
+    return "<tr data-search='"+ escapeHtml(headers.map(function(h){return row[h]||"";}).join(" ").toLowerCase()).replace(/'/g,"&#39;") +"'>" +
+      headers.map(function(h){ return "<td>"+cellHtml(row[h])+"</td>"; }).join("") +
+      "</tr>";
+  }).join("") + "</tbody>";
+  table.innerHTML = thead + tbody;
+}
+
+function loadTab(tab) {
+  fetch(CSV_URLS[tab])
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
+    .then(function(text){
+      var parsed = toObjects(parseCSV(text));
+      HEADERS[tab] = parsed.headers;
+      DATA[tab] = parsed.data;
+      document.getElementById("loading-"+tab).style.display = "none";
+      document.getElementById("count-"+tab).textContent = DATA[tab].length;
+      if (!DATA[tab].length) {
+        document.getElementById("empty-"+tab).style.display = "block";
+        return;
+      }
+      renderTable(tab);
+      document.getElementById("tablecard-"+tab).style.display = "block";
+      if (tab === currentTab) filterRows();
+    })
+    .catch(function(err){
+      document.getElementById("loading-"+tab).innerHTML =
+        '<div class="alert-error">⚠️ No se pudo cargar la hoja. ('+err.message+')</div>';
+    });
+}
+
+function cargarTodo() {
+  loadTab("delirio");
+  loadTab("simposio");
+  loadTab("rutas");
+}
+
+function filterRows() {
+  var q = document.getElementById("searchInput").value.toLowerCase().trim();
+  var tbody = document.querySelectorAll("#table-"+currentTab+" tbody tr");
+  var vis = 0;
+  tbody.forEach(function(r){
+    var match = !q || r.getAttribute("data-search").indexOf(q) !== -1;
+    r.style.display = match ? "" : "none";
+    if (match) vis++;
+  });
+  var empty = document.getElementById("empty-"+currentTab);
+  var tablecard = document.getElementById("tablecard-"+currentTab);
+  if (DATA[currentTab].length) {
+    empty.style.display = vis === 0 ? "block" : "none";
+    tablecard.style.display = vis === 0 ? "none" : "block";
+  }
+  document.getElementById("resultCount").textContent =
+    DATA[currentTab].length ? (vis + " de " + DATA[currentTab].length + " registros") : "";
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+  var idx = ["delirio","simposio","rutas"].indexOf(tab);
+  document.querySelectorAll(".tab-btn")[idx].classList.add("active");
+  document.getElementById("panel-"+tab).classList.add("active");
+  document.getElementById("searchInput").value = "";
+  filterRows();
+}
+</script>
+</body>
+</html>
