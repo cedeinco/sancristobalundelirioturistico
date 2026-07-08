@@ -183,11 +183,6 @@ td a:hover{text-decoration:underline;}
 <!-- ============ APP (oculta hasta login) ============ -->
 <div id="appRoot" style="display:none;">
 
-  <div class="hero">
-    <img src="https://lh3.googleusercontent.com/d/12OmYXr4XcY_MHdG5a40lwEyk1VJPf-as" alt="San Cristóbal - Un Delirio Turístico"
-         onerror="this.style.display='none';">
-  </div>
-
   <div class="topbar">
     <div class="topbar-left">
       <div>
@@ -233,17 +228,13 @@ td a:hover{text-decoration:underline;}
 
     <div class="tab-panel" id="panel-simposio">
       <div class="loading" id="loading-simposio"><div class="loading-spinner"></div>Cargando datos...</div>
-      <div class="table-card" id="tablecard-simposio" style="display:none;">
-        <div class="table-scroll"><table id="table-simposio"></table></div>
-      </div>
+      <div class="acc-list" id="acclist-simposio" style="display:none;"></div>
       <div class="empty" id="empty-simposio" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
     </div>
 
     <div class="tab-panel" id="panel-rutas">
       <div class="loading" id="loading-rutas"><div class="loading-spinner"></div>Cargando datos...</div>
-      <div class="table-card" id="tablecard-rutas" style="display:none;">
-        <div class="table-scroll"><table id="table-rutas"></table></div>
-      </div>
+      <div class="acc-list" id="acclist-rutas" style="display:none;"></div>
       <div class="empty" id="empty-rutas" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
     </div>
   </div>
@@ -331,7 +322,7 @@ var EXCLUDED_COLUMNS = {
 };
 
 // Pestañas que se muestran como lista acordeón (Consecutivo + Nombre) en vez de tabla
-var ACCORDION_TABS = ['delirio'];
+var ACCORDION_TABS = ['delirio', 'simposio', 'rutas'];
 
 function resolverNombre(row) {
   var nombre = ((row['Nombres'] || '') + ' ' + (row['Apellidos'] || '')).trim();
@@ -378,9 +369,23 @@ function toObjects(rows, excluded) {
 function isUrl(v) { return /^https?:\/\//i.test(v); }
 
 function cellHtml(v) {
-  if (!v) return '<span class="cell-empty">—</span>';
-  if (isUrl(v)) return '<a href="'+v+'" target="_blank" rel="noopener">Ver ↗</a>';
-  return escapeHtml(v);
+  if (!v) return '<span class="cell-empty">N/A</span>';
+  var urlRegex = /https?:\/\/[^\s,]+/g;
+  var urls = v.match(urlRegex);
+  if (!urls) return escapeHtml(v);
+  var count = 0;
+  var placeholders = [];
+  var withPlaceholders = v.replace(urlRegex, function(match){
+    count++;
+    var ph = '\u0000LINK' + count + '\u0000';
+    placeholders.push({ ph: ph, url: match, label: urls.length > 1 ? ('Ver ' + count + ' ↗') : 'Ver ↗' });
+    return ph;
+  });
+  var out = escapeHtml(withPlaceholders);
+  placeholders.forEach(function(p){
+    out = out.replace(p.ph, '<a href="' + p.url + '" target="_blank" rel="noopener">' + p.label + '</a>');
+  });
+  return out;
 }
 function escapeHtml(s) {
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
