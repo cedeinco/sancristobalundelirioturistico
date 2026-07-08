@@ -44,8 +44,10 @@ input:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgba(181,72,26,0
 .spinner{display:none;text-align:center;font-size:12px;color:var(--muted);margin-top:8px;}
 
 /* ===== HERO BANNER (post-login) ===== */
-.hero{width:100%;position:relative;line-height:0;}
-.hero img{width:100%;display:block;}
+.hero{width:100%;background:#fff;line-height:0;text-align:center;padding:8px 0;
+  border-bottom:3px solid var(--terracotta);}
+.hero img{height:92px;width:auto;max-width:90%;object-fit:contain;display:inline-block;}
+@media(max-width:720px){ .hero img{height:64px;} }
 
 /* ===== TOPBAR ===== */
 .topbar{background:var(--green);color:#fff;padding:0 28px;height:54px;display:flex;
@@ -101,6 +103,31 @@ tbody tr:hover td:first-child{background:#fbfaf6;}
 td a{color:var(--terracotta);text-decoration:none;font-weight:600;}
 td a:hover{text-decoration:underline;}
 .cell-empty{color:#c3c0b4;}
+
+/* ===== ACORDEÓN (Delirio Turístico) ===== */
+.acc-list{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);overflow:hidden;}
+.acc-row{border-bottom:1px solid #f1efe8;}
+.acc-row:last-child{border-bottom:none;}
+.acc-header{display:flex;align-items:center;gap:14px;padding:13px 18px;cursor:pointer;
+  transition:background .15s;user-select:none;}
+.acc-header:hover{background:#fbfaf6;}
+.acc-header.open{background:var(--soft-terracotta);}
+.acc-num{font-family:'DM Mono',monospace;font-size:11.5px;font-weight:600;color:var(--terracotta);
+  background:var(--soft-terracotta);padding:3px 9px;border-radius:6px;flex-shrink:0;}
+.acc-name{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.acc-chevron{font-size:11px;color:var(--muted);transition:transform .25s;flex-shrink:0;}
+.acc-header.open .acc-chevron{transform:rotate(180deg);}
+.acc-detail{display:none;border-top:1px solid var(--line);background:#fbfaf6;padding:16px 20px;}
+.acc-detail.open{display:block;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;}
+.detail-item{display:flex;flex-direction:column;gap:2px;}
+.detail-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;}
+.detail-value{font-size:13px;color:var(--text);word-break:break-word;}
+.detail-value a{color:var(--terracotta);text-decoration:none;font-weight:600;}
+.detail-value a:hover{text-decoration:underline;}
+@media(max-width:640px){ .detail-grid{grid-template-columns:1fr;} }
 
 /* ===== STATES ===== */
 .loading{text-align:center;padding:60px 20px;color:var(--muted);}
@@ -200,9 +227,7 @@ td a:hover{text-decoration:underline;}
 
     <div class="tab-panel active" id="panel-delirio">
       <div class="loading" id="loading-delirio"><div class="loading-spinner"></div>Cargando datos...</div>
-      <div class="table-card" id="tablecard-delirio" style="display:none;">
-        <div class="table-scroll"><table id="table-delirio"></table></div>
-      </div>
+      <div class="acc-list" id="acclist-delirio" style="display:none;"></div>
       <div class="empty" id="empty-delirio" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
     </div>
 
@@ -298,6 +323,22 @@ var DATA = { delirio: [], simposio: [], rutas: [] };
 var HEADERS = { delirio: [], simposio: [], rutas: [] };
 var currentTab = "delirio";
 
+// Columnas que no se muestran, por pestaña
+var EXCLUDED_COLUMNS = {
+  delirio: ['Aprobaciones', 'Comentarios'],
+  simposio: [],
+  rutas: []
+};
+
+// Pestañas que se muestran como lista acordeón (Consecutivo + Nombre) en vez de tabla
+var ACCORDION_TABS = ['delirio'];
+
+function resolverNombre(row) {
+  var nombre = ((row['Nombres'] || '') + ' ' + (row['Apellidos'] || '')).trim();
+  if (nombre) return nombre;
+  return row['Nombre completo'] || row['Nombre'] || '(sin nombre)';
+}
+
 function parseCSV(text) {
   text = text.replace(/^\uFEFF/, "");
   var rows = [];
@@ -320,13 +361,15 @@ function parseCSV(text) {
   return rows.filter(function(r){ return r.some(function(c){ return c.trim() !== ""; }); });
 }
 
-function toObjects(rows) {
+function toObjects(rows, excluded) {
   if (rows.length < 1) return { headers: [], data: [] };
-  var headers = rows[0].map(function(h){ return h.trim(); });
+  var allHeaders = rows[0].map(function(h){ return h.trim(); });
+  excluded = excluded || [];
+  var headers = allHeaders.filter(function(h){ return excluded.indexOf(h) === -1; });
   var data = [];
   for (var i = 1; i < rows.length; i++) {
     var obj = {};
-    headers.forEach(function(h, idx){ obj[h] = (rows[i][idx] || "").trim(); });
+    allHeaders.forEach(function(h, idx){ obj[h] = (rows[i][idx] || "").trim(); });
     data.push(obj);
   }
   return { headers: headers, data: data };
@@ -356,11 +399,46 @@ function renderTable(tab) {
   table.innerHTML = thead + tbody;
 }
 
+function renderAccordion(tab) {
+  var headers = HEADERS[tab];
+  var data = DATA[tab];
+  var list = document.getElementById("acclist-" + tab);
+  list.innerHTML = data.map(function(row, i){
+    var id = tab + "-" + i;
+    var num = row['Consecutivo'] || (i + 1);
+    var nombre = resolverNombre(row);
+    var searchStr = headers.map(function(h){ return row[h] || ""; }).join(" ").toLowerCase().replace(/"/g,"&quot;");
+    var detailFields = headers.filter(function(h){
+      return h !== 'Consecutivo' && h !== 'Nombres' && h !== 'Apellidos' && h !== 'Nombre completo' && h !== 'Nombre';
+    });
+    var detailHtml = detailFields.map(function(h){
+      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
+        '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
+    }).join("");
+    return '<div class="acc-row" data-search="'+searchStr+'">' +
+      '<div class="acc-header" onclick="toggleAcc(\''+id+'\')" id="acchead-'+id+'">' +
+        '<span class="acc-num">#'+escapeHtml(String(num))+'</span>' +
+        '<span class="acc-name">'+escapeHtml(nombre)+'</span>' +
+        '<span class="acc-chevron">▼</span>' +
+      '</div>' +
+      '<div class="acc-detail" id="accdetail-'+id+'"><div class="detail-grid">'+detailHtml+'</div></div>' +
+    '</div>';
+  }).join("");
+}
+
+function toggleAcc(id) {
+  var header = document.getElementById("acchead-" + id);
+  var detail = document.getElementById("accdetail-" + id);
+  var isOpen = header.classList.contains("open");
+  header.classList.toggle("open", !isOpen);
+  detail.classList.toggle("open", !isOpen);
+}
+
 function loadTab(tab) {
   fetch(CSV_URLS[tab])
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
     .then(function(text){
-      var parsed = toObjects(parseCSV(text));
+      var parsed = toObjects(parseCSV(text), EXCLUDED_COLUMNS[tab]);
       HEADERS[tab] = parsed.headers;
       DATA[tab] = parsed.data;
       document.getElementById("loading-"+tab).style.display = "none";
@@ -369,8 +447,14 @@ function loadTab(tab) {
         document.getElementById("empty-"+tab).style.display = "block";
         return;
       }
-      renderTable(tab);
-      document.getElementById("tablecard-"+tab).style.display = "block";
+      var isAccordion = ACCORDION_TABS.indexOf(tab) !== -1;
+      if (isAccordion) {
+        renderAccordion(tab);
+        document.getElementById("acclist-"+tab).style.display = "block";
+      } else {
+        renderTable(tab);
+        document.getElementById("tablecard-"+tab).style.display = "block";
+      }
       if (tab === currentTab) filterRows();
     })
     .catch(function(err){
@@ -387,18 +471,20 @@ function cargarTodo() {
 
 function filterRows() {
   var q = document.getElementById("searchInput").value.toLowerCase().trim();
-  var tbody = document.querySelectorAll("#table-"+currentTab+" tbody tr");
+  var isAccordion = ACCORDION_TABS.indexOf(currentTab) !== -1;
+  var selector = isAccordion ? ("#acclist-"+currentTab+" .acc-row") : ("#table-"+currentTab+" tbody tr");
+  var rows = document.querySelectorAll(selector);
   var vis = 0;
-  tbody.forEach(function(r){
+  rows.forEach(function(r){
     var match = !q || r.getAttribute("data-search").indexOf(q) !== -1;
     r.style.display = match ? "" : "none";
     if (match) vis++;
   });
   var empty = document.getElementById("empty-"+currentTab);
-  var tablecard = document.getElementById("tablecard-"+currentTab);
+  var container = document.getElementById((isAccordion ? "acclist-" : "tablecard-")+currentTab);
   if (DATA[currentTab].length) {
     empty.style.display = vis === 0 ? "block" : "none";
-    tablecard.style.display = vis === 0 ? "none" : "block";
+    container.style.display = vis === 0 ? "none" : "block";
   }
   document.getElementById("resultCount").textContent =
     DATA[currentTab].length ? (vis + " de " + DATA[currentTab].length + " registros") : "";
