@@ -63,6 +63,20 @@ input:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgba(181,72,26,0
   padding:6px 13px;border-radius:999px;font-size:11.5px;font-weight:600;font-family:inherit;
   cursor:pointer;transition:background .15s;}
 .btn-logout:hover{background:rgba(255,255,255,0.22);}
+.btn-download{background:var(--terracotta);color:#fff;border:1px solid var(--terracotta-light);
+  padding:6px 14px;border-radius:999px;font-size:11.5px;font-weight:700;font-family:inherit;
+  cursor:pointer;transition:background .15s;display:inline-flex;align-items:center;gap:5px;}
+.btn-download:hover{background:var(--terracotta-light);}
+.dl-wrap{position:relative;}
+.dl-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;
+  border:1px solid var(--line);border-radius:var(--radius-sm);box-shadow:var(--shadow);
+  min-width:260px;overflow:hidden;z-index:200;}
+.dl-menu.open{display:block;}
+.dl-menu a{display:block;padding:11px 16px;font-size:12.5px;font-weight:600;color:var(--text);
+  text-decoration:none;border-bottom:1px solid #f1efe8;transition:background .15s;}
+.dl-menu a:last-child{border-bottom:none;}
+.dl-menu a:hover{background:var(--soft-terracotta);color:var(--terracotta);}
+.dl-menu a span{display:block;font-size:10.5px;font-weight:500;color:var(--muted);margin-top:2px;}
 
 /* ===== TABS ===== */
 .tabs-wrap{background:var(--card);border-bottom:2px solid var(--line);padding:0 20px;
@@ -192,6 +206,20 @@ td a:hover{text-decoration:underline;}
     </div>
     <div class="topbar-right">
       <span class="topbar-badge" id="topbarUsuario">👤 admin</span>
+      <div class="dl-wrap">
+        <button class="btn-download" onclick="toggleDlMenu(event)">📥 Descargar ▾</button>
+        <div class="dl-menu" id="dlMenu">
+          <a href="https://docs.google.com/spreadsheets/d/1P5ct48CBdLRAqMgRHDORm7_mLM78o3WxN_9ALYXgFGE/export?format=xlsx" rel="noopener">
+            🌄 Delirio Turístico<span>Descargar Excel</span>
+          </a>
+          <a href="https://docs.google.com/spreadsheets/d/1vgVSyJAUcgscl3LKVBlNX_5HEIkDnHHf_u7gF_N88_s/export?format=xlsx" rel="noopener">
+            🎓 Simposio y Fortalecimiento<span>Descargar Excel</span>
+          </a>
+          <a href="https://docs.google.com/spreadsheets/d/1-g4VZPlggPBPAXOB4A9e8CGV4YRjiQXO3VVO9RWH32g/export?format=xlsx" rel="noopener">
+            🥾 Rutas Turísticas<span>Descargar Excel</span>
+          </a>
+        </div>
+      </div>
       <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
     </div>
   </div>
@@ -300,6 +328,14 @@ function cerrarSesion() {
 document.addEventListener('DOMContentLoaded', function() {
   var sesion = sessionStorage.getItem('sgsc_admin');
   if (sesion) activarApp(sesion);
+});
+
+function toggleDlMenu(e) {
+  e.stopPropagation();
+  document.getElementById('dlMenu').classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  document.getElementById('dlMenu').classList.remove('open');
 });
 
 /***********************
