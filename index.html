@@ -31,10 +31,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .login-field{margin-bottom:14px;}
 .login-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);
   text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;}
-input,select{width:100%;border:1px solid #d8d5c9;border-radius:var(--radius-sm);padding:10px 13px;
+input,select,textarea{width:100%;border:1px solid #d8d5c9;border-radius:var(--radius-sm);padding:10px 13px;
   font-size:13.5px;font-family:inherit;color:var(--text);background:#fff;outline:none;
   transition:border-color .2s,box-shadow .2s;}
-input:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgba(181,72,26,0.12);}
+input:focus,select:focus,textarea:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgba(181,72,26,0.12);}
+textarea{min-height:80px;resize:vertical;line-height:1.5;}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;
   border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;font-family:inherit;border:none;
   cursor:pointer;transition:all .18s ease;white-space:nowrap;}
@@ -143,6 +144,47 @@ td a:hover{text-decoration:underline;}
 .detail-value a:hover{text-decoration:underline;}
 @media(max-width:640px){ .detail-grid{grid-template-columns:1fr;} }
 
+/* ===== APROBACIÓN Y COMENTARIOS ===== */
+.approval-box{margin-top:16px;padding:16px 18px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:#fff;}
+.approval-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.4px;margin-bottom:10px;}
+.approval-current{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.approval-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;
+  font-size:11px;font-weight:700;}
+.approval-pill.aprobado{background:var(--soft-green);color:#166534;}
+.approval-pill.rechazado{background:var(--soft-red);color:#991b1b;}
+.approval-pill.pendiente{background:var(--soft-mustard);color:#9a6b0e;}
+.approval-history-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;
+  max-height:230px;overflow-y:auto;padding-right:4px;}
+.approval-comment{background:#fbfaf6;border:1px solid var(--line);border-left:3px solid var(--terracotta);
+  border-radius:8px;padding:9px 12px;}
+.approval-comment-date{font-family:'DM Mono',monospace;font-size:10.5px;font-weight:700;
+  color:var(--terracotta);margin-bottom:3px;}
+.approval-comment-text{font-size:12.5px;color:var(--text);line-height:1.5;}
+.approval-history-empty{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:14px;}
+.approval-form{display:flex;flex-direction:column;gap:10px;}
+.approval-msg{font-size:12px;font-weight:600;min-height:16px;}
+.approval-msg.err{color:#991b1b;}
+.approval-msg.ok{color:#166534;}
+
+/* ===== STATS BAR ===== */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.total::before{background:var(--green);}
+.stat-card.pendiente::before{background:var(--mustard);}
+.stat-card.aprobado::before{background:#059669;}
+.stat-card.rechazado::before{background:var(--terracotta);}
+.stat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.4px;margin-bottom:6px;}
+.stat-value{font-size:26px;font-weight:700;color:var(--text);}
+.stat-card.pendiente .stat-value{color:#9a6b0e;}
+.stat-card.aprobado .stat-value{color:#059669;}
+.stat-card.rechazado .stat-value{color:var(--terracotta);}
+@media(max-width:640px){ .stats-bar{grid-template-columns:repeat(2,1fr);} }
+
 /* ===== STATES ===== */
 .loading{text-align:center;padding:60px 20px;color:var(--muted);}
 .loading-spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--terracotta);
@@ -249,6 +291,7 @@ td a:hover{text-decoration:underline;}
     </div>
 
     <div class="tab-panel active" id="panel-delirio">
+      <div class="stats-bar" id="statsDelirio" style="display:none;"></div>
       <div class="loading" id="loading-delirio"><div class="loading-spinner"></div>Cargando datos...</div>
       <div class="acc-list" id="acclist-delirio" style="display:none;"></div>
       <div class="empty" id="empty-delirio" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
@@ -346,6 +389,9 @@ var CSV_URLS = {
   simposio: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRmCYve8OoB3lPMj08sjroaJyWOfH8o51M-9Kvy5DYbUVHVFxtmWr4BBSNBJWWVTPT8d_USQD0CBXcO/pub?output=csv",
   rutas:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnoSaOqdTGB5StRrr8pVoDC9hhhMkNbeJ0mACMR8pAiwuTKjAAUThQTUagyyJAcKLXo-tTzZusLZMc/pub?output=csv"
 };
+
+// Web App (Apps Script) que escribe Aprobación/Comentarios en el Sheet de Delirio Turístico
+var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeZ6iyB43n9W2W6uqavElmoLSonYr2JUF9V7UBpLuXjNLJWfUwbuh3baORYHPDSbU0/exec";
 
 var DATA = { delirio: [], simposio: [], rutas: [] };
 var HEADERS = { delirio: [], simposio: [], rutas: [] };
@@ -457,15 +503,76 @@ function renderAccordion(tab) {
       return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
         '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
     }).join("");
+
+    var estadoPillHtml = "";
+    var approvalHtml = "";
+    if (tab === 'delirio') {
+      var consecutivoStr = String(num).replace(/'/g, "\\'");
+      var estadoActual = (row['Aprobaciones'] || '').trim();
+      var comentariosActual = (row['Comentarios'] || '').trim();
+      var pillClass = /aprob/i.test(estadoActual) ? 'aprobado' : /rechaz/i.test(estadoActual) ? 'rechazado' : 'pendiente';
+      var pillLabel = estadoActual || 'Pendiente';
+
+      estadoPillHtml = '<span class="approval-pill '+pillClass+'">'+escapeHtml(pillLabel)+'</span>';
+
+      var historialHtml = comentariosActual
+        ? '<div class="approval-history-list">' + comentariosActual.split('\n').filter(Boolean).map(function(linea){
+            var m = linea.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+            if (m) {
+              return '<div class="approval-comment"><div class="approval-comment-date">'+escapeHtml(m[1])+'</div>' +
+                '<div class="approval-comment-text">'+escapeHtml(m[2])+'</div></div>';
+            }
+            return '<div class="approval-comment"><div class="approval-comment-text">'+escapeHtml(linea)+'</div></div>';
+          }).join('') + '</div>'
+        : '<div class="approval-history-empty">Sin comentarios aún.</div>';
+
+      approvalHtml =
+        '<div class="approval-box">' +
+          '<div class="approval-title">✅ Aprobación y comentarios</div>' +
+          '<div class="approval-current"><span class="approval-pill '+pillClass+'">'+escapeHtml(pillLabel)+'</span></div>' +
+          historialHtml +
+          '<div class="approval-form">' +
+            '<select id="estado-'+id+'">' +
+              '<option value="">Seleccionar estado</option>' +
+              '<option value="Aprobado"'+(estadoActual==='Aprobado'?' selected':'')+'>Aprobado</option>' +
+              '<option value="Rechazado"'+(estadoActual==='Rechazado'?' selected':'')+'>Rechazado</option>' +
+            '</select>' +
+            '<textarea id="comentario-'+id+'" placeholder="Escribe el nuevo comentario..."></textarea>' +
+            '<button class="btn btn-primary" style="width:auto;align-self:flex-start;" id="btnGuardar-'+id+'" ' +
+              'onclick="guardarAprobacion(\''+tab+'\','+i+',\''+consecutivoStr+'\')">Guardar</button>' +
+            '<div class="approval-msg" id="msg-'+id+'"></div>' +
+          '</div>' +
+        '</div>';
+    }
+
     return '<div class="acc-row" data-search="'+searchStr+'">' +
       '<div class="acc-header" onclick="toggleAcc(\''+id+'\')" id="acchead-'+id+'">' +
         '<span class="acc-num">#'+escapeHtml(String(num))+'</span>' +
         '<span class="acc-name">'+escapeHtml(nombre)+'</span>' +
+        estadoPillHtml +
         '<span class="acc-chevron">▼</span>' +
       '</div>' +
-      '<div class="acc-detail" id="accdetail-'+id+'"><div class="detail-grid">'+detailHtml+'</div></div>' +
+      '<div class="acc-detail" id="accdetail-'+id+'"><div class="detail-grid">'+detailHtml+'</div>'+approvalHtml+'</div>' +
     '</div>';
   }).join("");
+
+  if (tab === 'delirio') renderStatsDelirio();
+}
+
+function renderStatsDelirio() {
+  var data = DATA['delirio'];
+  var total = data.length;
+  var aprobados = data.filter(function(r){ return /aprob/i.test(r['Aprobaciones'] || ''); }).length;
+  var rechazados = data.filter(function(r){ return /rechaz/i.test(r['Aprobaciones'] || ''); }).length;
+  var pendientes = total - aprobados - rechazados;
+
+  var el = document.getElementById('statsDelirio');
+  el.innerHTML =
+    '<div class="stat-card total"><div class="stat-label">Total</div><div class="stat-value">'+total+'</div></div>' +
+    '<div class="stat-card pendiente"><div class="stat-label">Pendientes</div><div class="stat-value">'+pendientes+'</div></div>' +
+    '<div class="stat-card aprobado"><div class="stat-label">Aprobados</div><div class="stat-value">'+aprobados+'</div></div>' +
+    '<div class="stat-card rechazado"><div class="stat-label">Rechazados</div><div class="stat-value">'+rechazados+'</div></div>';
+  el.style.display = 'grid';
 }
 
 function toggleAcc(id) {
@@ -474,6 +581,52 @@ function toggleAcc(id) {
   var isOpen = header.classList.contains("open");
   header.classList.toggle("open", !isOpen);
   detail.classList.toggle("open", !isOpen);
+}
+
+function guardarAprobacion(tab, i, consecutivo) {
+  var id = tab + '-' + i;
+  var estadoEl = document.getElementById('estado-' + id);
+  var comentarioEl = document.getElementById('comentario-' + id);
+  var msg = document.getElementById('msg-' + id);
+  var btn = document.getElementById('btnGuardar-' + id);
+
+  var estado = estadoEl.value.trim();
+  var comentario = comentarioEl.value.trim();
+  msg.textContent = '';
+  msg.className = 'approval-msg';
+
+  if (!estado) { msg.textContent = 'Selecciona un estado.'; msg.classList.add('err'); return; }
+  if (!comentario) { msg.textContent = 'Escribe un comentario.'; msg.classList.add('err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  fetch(WEBAPP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ accion: 'guardarAprobacionWeb', consecutivo: consecutivo, estado: estado, comentario: comentario })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      btn.disabled = false;
+      btn.textContent = 'Guardar';
+      if (!resp.ok) {
+        msg.textContent = resp.error || 'No se pudo guardar.';
+        msg.classList.add('err');
+        return;
+      }
+      DATA[tab][i]['Aprobaciones'] = resp.estado || estado;
+      DATA[tab][i]['Comentarios'] = resp.comentarios || comentario;
+      renderAccordion(tab);
+      filterRows();
+      toggleAcc(id);
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      btn.textContent = 'Guardar';
+      msg.textContent = 'Error de conexión: ' + err.message;
+      msg.classList.add('err');
+    });
 }
 
 function loadTab(tab) {
@@ -487,6 +640,7 @@ function loadTab(tab) {
       document.getElementById("count-"+tab).textContent = DATA[tab].length;
       if (!DATA[tab].length) {
         document.getElementById("empty-"+tab).style.display = "block";
+        if (tab === 'delirio') renderStatsDelirio();
         return;
       }
       var isAccordion = ACCORDION_TABS.indexOf(tab) !== -1;
