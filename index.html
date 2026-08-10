@@ -279,6 +279,10 @@ td a:hover{text-decoration:underline;}
       🥾 Rutas Turísticas
       <span class="tab-count" id="count-rutas">—</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('creadores')">
+      🎥 Creadores de Contenido
+      <span class="tab-count" id="count-creadores">—</span>
+    </button>
   </div>
 
   <div class="app">
@@ -307,6 +311,14 @@ td a:hover{text-decoration:underline;}
       <div class="loading" id="loading-rutas"><div class="loading-spinner"></div>Cargando datos...</div>
       <div class="acc-list" id="acclist-rutas" style="display:none;"></div>
       <div class="empty" id="empty-rutas" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
+    </div>
+
+    <div class="tab-panel" id="panel-creadores">
+      <div class="loading" id="loading-creadores"><div class="loading-spinner"></div>Cargando datos...</div>
+      <div class="table-card" id="tablecard-creadores" style="display:none;">
+        <div class="table-scroll"><table id="table-creadores"></table></div>
+      </div>
+      <div class="empty" id="empty-creadores" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
     </div>
   </div>
 </div>
@@ -385,9 +397,10 @@ document.addEventListener('click', function() {
  * DATOS — Google Sheets (CSV publicado, en vivo)
  ***********************/
 var CSV_URLS = {
-  delirio:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqZ5zncTvdvHMOnLuPSlFgFOxnU0NddjhTxU2GPhFuj1V3cuLav8d2uUbGpn4Pk1Taf73D13GFDXBW/pub?gid=200425436&single=true&output=csv",
-  simposio: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRmCYve8OoB3lPMj08sjroaJyWOfH8o51M-9Kvy5DYbUVHVFxtmWr4BBSNBJWWVTPT8d_USQD0CBXcO/pub?output=csv",
-  rutas:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnoSaOqdTGB5StRrr8pVoDC9hhhMkNbeJ0mACMR8pAiwuTKjAAUThQTUagyyJAcKLXo-tTzZusLZMc/pub?output=csv"
+  delirio:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqZ5zncTvdvHMOnLuPSlFgFOxnU0NddjhTxU2GPhFuj1V3cuLav8d2uUbGpn4Pk1Taf73D13GFDXBW/pub?gid=200425436&single=true&output=csv",
+  simposio:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRmCYve8OoB3lPMj08sjroaJyWOfH8o51M-9Kvy5DYbUVHVFxtmWr4BBSNBJWWVTPT8d_USQD0CBXcO/pub?output=csv",
+  rutas:     "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnoSaOqdTGB5StRrr8pVoDC9hhhMkNbeJ0mACMR8pAiwuTKjAAUThQTUagyyJAcKLXo-tTzZusLZMc/pub?output=csv",
+  creadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRL8Q2DBahNGY5KV53-R1xCTNd2heT1_Aa-X7eTXLan71OuqzoUXFYVQgz94ePxGqwKGQXNPxJ0DAfm/pub?output=csv"
 };
 
 // Web App (Apps Script) que escribe Aprobación/Comentarios en el Sheet de Delirio Turístico
@@ -401,7 +414,8 @@ var currentTab = "delirio";
 var EXCLUDED_COLUMNS = {
   delirio: ['Aprobaciones', 'Comentarios'],
   simposio: [],
-  rutas: []
+  rutas: [],
+  creadores: []
 };
 
 // Pestañas que se muestran como lista acordeón (Consecutivo + Nombre) en vez de tabla
@@ -663,6 +677,7 @@ function cargarTodo() {
   loadTab("delirio");
   loadTab("simposio");
   loadTab("rutas");
+  loadTab("creadores");
 }
 
 function filterRows() {
@@ -690,7 +705,7 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
   document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
-  var idx = ["delirio","simposio","rutas"].indexOf(tab);
+  var idx = ["delirio","simposio","rutas","creadores"].indexOf(tab);
   document.querySelectorAll(".tab-btn")[idx].classList.add("active");
   document.getElementById("panel-"+tab).classList.add("active");
   document.getElementById("searchInput").value = "";
