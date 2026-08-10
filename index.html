@@ -315,9 +315,7 @@ td a:hover{text-decoration:underline;}
 
     <div class="tab-panel" id="panel-creadores">
       <div class="loading" id="loading-creadores"><div class="loading-spinner"></div>Cargando datos...</div>
-      <div class="table-card" id="tablecard-creadores" style="display:none;">
-        <div class="table-scroll"><table id="table-creadores"></table></div>
-      </div>
+      <div class="acc-list" id="acclist-creadores" style="display:none;"></div>
       <div class="empty" id="empty-creadores" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
     </div>
   </div>
@@ -419,7 +417,7 @@ var EXCLUDED_COLUMNS = {
 };
 
 // Pestañas que se muestran como lista acordeón (Consecutivo + Nombre) en vez de tabla
-var ACCORDION_TABS = ['delirio', 'simposio', 'rutas'];
+var ACCORDION_TABS = ['delirio', 'simposio', 'rutas', 'creadores'];
 
 function resolverNombre(row) {
   var nombre = ((row['Nombres'] || '') + ' ' + (row['Apellidos'] || '')).trim();
