@@ -448,20 +448,25 @@ var CREADORES_SECTIONS = [
     'Describa brevemente su experiencia como creador de contenido.'
   ]},
   { title: '📸 Instagram', fields: [
-    'Utiliza Instagram', 'Nombre de cómo sale en Instagram', 'Enlace de Instagram', 'Número de seguidores de Instagram'
+    'Utiliza Instagram', 'Nombre de cómo sale en Instagram', 'Enlace de Instagram', 'Número de seguidores de Instagram',
+    'Adjunte una imagen de su red social Instagram'
   ]},
   { title: '🎵 TikTok', fields: [
-    'Utiliza TikTok', 'Nombre de cómo sale en TikTok', 'Enlace de TikTok', 'Número de seguidores de TikTok'
+    'Utiliza TikTok', 'Nombre de cómo sale en TikTok', 'Enlace de TikTok', 'Número de seguidores de TikTok',
+    'Adjunte una imagen de su red social TikTok'
   ]},
   { title: '📘 Facebook', fields: [
-    'Utiliza Facebook', 'Nombre de cómo sale en Facebook', 'Enlace de Facebook', 'Número de seguidores de Facebook'
+    'Utiliza Facebook', 'Nombre de cómo sale en Facebook', 'Enlace de Facebook', 'Número de seguidores de Facebook',
+    'Adjunte una imagen de su red social Facebook'
   ]},
   { title: '▶️ YouTube', fields: [
-    'Utiliza YouTube', 'Nombre de cómo sale en YouTube', 'Enlace de YouTube', 'Número de seguidores de YouTube'
+    'Utiliza YouTube', 'Nombre de cómo sale en YouTube', 'Enlace de YouTube', 'Número de seguidores de YouTube',
+    'Adjunte una imagen de su red social YouTube'
   ]},
   { title: '🌐 Otra Red Social', fields: [
     'Utiliza Otra red social', 'Nombre de cómo sale en Otra red social', 'Enlace de Otra red social',
-    'Número de seguidores de Otra red social', '¿Cuenta con mínimo 600 seguidores?'
+    'Número de seguidores de Otra red social', 'Adjunte una imagen de su Otra red social',
+    '¿Cuenta con mínimo 600 seguidores?'
   ]},
   { title: '🎥 Experiencia Audiovisual y Turismo', fields: [
     '¿Ha producido contenido relacionado con turismo?', 'Si respondió sí, describa la experiencia',
@@ -478,8 +483,7 @@ var CREADORES_SECTIONS = [
     'Describa una idea de reel para promocionar San Cristóbal'
   ]},
   { title: '✅ Legal', fields: [
-    '¿Acepta los términos, condiciones y autorizaciones anteriormente descritos?',
-    'Desea volver a la autorización de términos y condiciones.'
+    '¿Acepta los términos, condiciones y autorizaciones anteriormente descritos?'
   ]},
   { title: '📎 Documentos Adjuntos', fields: [
     'Documento de identidad', 'Soporte de residencia', 'Portafolio (opcional)', 'Certificaciones (si aplica)',
@@ -488,9 +492,13 @@ var CREADORES_SECTIONS = [
   { title: '💬 Comentario', fields: ['¿Tiene algún comentario?'] }
 ];
 
+// Campos que no se muestran en ningún apartado de Creadores de Contenido
+var CREADORES_CAMPOS_OCULTOS = ['Desea volver a la autorización de términos y condiciones.'];
+
 function renderCreadoresDetail(row, headers) {
   var mostrados = {};
   CREADORES_SECTIONS.forEach(function(sec){ sec.fields.forEach(function(f){ mostrados[f] = true; }); });
+  CREADORES_CAMPOS_OCULTOS.forEach(function(f){ mostrados[f] = true; });
 
   var html = CREADORES_SECTIONS.map(function(sec){
     var presentes = sec.fields.filter(function(f){ return headers.indexOf(f) !== -1; });
