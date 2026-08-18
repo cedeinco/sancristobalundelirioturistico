@@ -144,6 +144,12 @@ td a:hover{text-decoration:underline;}
 .detail-value a:hover{text-decoration:underline;}
 @media(max-width:640px){ .detail-grid{grid-template-columns:1fr;} }
 
+/* ===== SECCIONES DE DETALLE (Creadores de Contenido) ===== */
+.detail-section{margin-bottom:18px;}
+.detail-section:last-child{margin-bottom:0;}
+.detail-section-title{font-size:12.5px;font-weight:700;color:var(--green-text);
+  border-left:3px solid var(--terracotta);padding-left:10px;margin-bottom:10px;}
+
 /* ===== APROBACIÓN Y COMENTARIOS ===== */
 .approval-box{margin-top:16px;padding:16px 18px;border:1px solid var(--line);border-radius:var(--radius-sm);
   background:#fff;}
@@ -425,6 +431,91 @@ function resolverNombre(row) {
   return row['Nombre completo'] || row['Nombre'] || '(sin nombre)';
 }
 
+// Apartados del detalle de "Creadores de Contenido" — mismo orden del formulario original
+var CREADORES_SECTIONS = [
+  { title: '📋 Registro', fields: ['Consecutivo', 'Marca temporal', 'Dirección de correo electrónico'] },
+  { title: '🧑 Datos Personales', fields: [
+    'Nombres', 'Apellidos', 'Fecha de nacimiento', 'Tipo de documento', 'Numero de documento',
+    'Género', 'Orientación sexual', '¿Es víctima del conflicto?', '¿Tiene discapacidad?', 'Grupo étnico',
+    '¿Es joven / adulto mayor?', 'Teléfono de contacto', 'Correo electrónico de contacto',
+    '¿Pertenece a una población migrante internacional?', '¿Cuál población migrante internacional?'
+  ]},
+  { title: '🏠 Información de Residencia', fields: [
+    '¿Reside en la localidad de San Cristóbal?', 'Barrio de residencia', 'Dirección de residencia'
+  ]},
+  { title: '🎬 Perfil como Creador de Contenido', fields: [
+    'Nombre artístico (si aplica)', '¿Hace cuánto crea contenido digital?', '¿Cuál es su principal temática?',
+    'Describa brevemente su experiencia como creador de contenido.'
+  ]},
+  { title: '📸 Instagram', fields: [
+    'Utiliza Instagram', 'Nombre de cómo sale en Instagram', 'Enlace de Instagram', 'Número de seguidores de Instagram'
+  ]},
+  { title: '🎵 TikTok', fields: [
+    'Utiliza TikTok', 'Nombre de cómo sale en TikTok', 'Enlace de TikTok', 'Número de seguidores de TikTok'
+  ]},
+  { title: '📘 Facebook', fields: [
+    'Utiliza Facebook', 'Nombre de cómo sale en Facebook', 'Enlace de Facebook', 'Número de seguidores de Facebook'
+  ]},
+  { title: '▶️ YouTube', fields: [
+    'Utiliza YouTube', 'Nombre de cómo sale en YouTube', 'Enlace de YouTube', 'Número de seguidores de YouTube'
+  ]},
+  { title: '🌐 Otra Red Social', fields: [
+    'Utiliza Otra red social', 'Nombre de cómo sale en Otra red social', 'Enlace de Otra red social',
+    'Número de seguidores de Otra red social', '¿Cuenta con mínimo 600 seguidores?'
+  ]},
+  { title: '🎥 Experiencia Audiovisual y Turismo', fields: [
+    '¿Ha producido contenido relacionado con turismo?', 'Si respondió sí, describa la experiencia',
+    'Incluya enlaces de mínimo tres contenidos publicados.', 'Portafolio digital (opcional)',
+    'Seleccione el sector donde participa', 'Explique cómo aporta actualmente al turismo de San Cristóbal'
+  ]},
+  { title: '📅 Disponibilidad', fields: [
+    '¿Tiene disponibilidad para asistir a reuniones de planeación?', '¿Puede realizar trabajo de campo?',
+    '¿Cuenta con equipo propio?'
+  ]},
+  { title: '💡 Propuesta Creativa', fields: [
+    '¿Por qué desea participar en esta convocatoria?',
+    'Seleccione las categorías sobre las cuales preferiría producir contenido.',
+    'Describa una idea de reel para promocionar San Cristóbal'
+  ]},
+  { title: '✅ Legal', fields: [
+    '¿Acepta los términos, condiciones y autorizaciones anteriormente descritos?',
+    'Desea volver a la autorización de términos y condiciones.'
+  ]},
+  { title: '📎 Documentos Adjuntos', fields: [
+    'Documento de identidad', 'Soporte de residencia', 'Portafolio (opcional)', 'Certificaciones (si aplica)',
+    'Carpeta Final', 'PDF Final'
+  ]},
+  { title: '💬 Comentario', fields: ['¿Tiene algún comentario?'] }
+];
+
+function renderCreadoresDetail(row, headers) {
+  var mostrados = {};
+  CREADORES_SECTIONS.forEach(function(sec){ sec.fields.forEach(function(f){ mostrados[f] = true; }); });
+
+  var html = CREADORES_SECTIONS.map(function(sec){
+    var presentes = sec.fields.filter(function(f){ return headers.indexOf(f) !== -1; });
+    if (!presentes.length) return '';
+    var campos = presentes.map(function(h){
+      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
+        '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
+    }).join('');
+    return '<div class="detail-section"><div class="detail-section-title">'+sec.title+'</div>' +
+      '<div class="detail-grid">'+campos+'</div></div>';
+  }).join('');
+
+  var otros = headers.filter(function(h){ return !mostrados[h]; });
+  if (otros.length) {
+    var camposOtros = otros.map(function(h){
+      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
+        '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
+    }).join('');
+    html += '<div class="detail-section"><div class="detail-section-title">ℹ️ Otros campos</div>' +
+      '<div class="detail-grid">'+camposOtros+'</div></div>';
+  }
+
+  return html;
+}
+
 function parseCSV(text) {
   text = text.replace(/^\uFEFF/, "");
   var rows = [];
@@ -511,10 +602,12 @@ function renderAccordion(tab) {
     var detailFields = headers.filter(function(h){
       return h !== 'Consecutivo' && h !== 'Nombres' && h !== 'Apellidos' && h !== 'Nombre completo' && h !== 'Nombre';
     });
-    var detailHtml = detailFields.map(function(h){
-      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
-        '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
-    }).join("");
+    var detailHtml = tab === 'creadores'
+      ? renderCreadoresDetail(row, headers)
+      : detailFields.map(function(h){
+          return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
+            '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
+        }).join("");
 
     var estadoPillHtml = "";
     var approvalHtml = "";
@@ -564,7 +657,10 @@ function renderAccordion(tab) {
         estadoPillHtml +
         '<span class="acc-chevron">▼</span>' +
       '</div>' +
-      '<div class="acc-detail" id="accdetail-'+id+'"><div class="detail-grid">'+detailHtml+'</div>'+approvalHtml+'</div>' +
+      '<div class="acc-detail" id="accdetail-'+id+'">' +
+        (tab === 'creadores' ? detailHtml : '<div class="detail-grid">'+detailHtml+'</div>') +
+        approvalHtml +
+      '</div>' +
     '</div>';
   }).join("");
 
