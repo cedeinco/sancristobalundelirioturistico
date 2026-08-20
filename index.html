@@ -289,6 +289,10 @@ td a:hover{text-decoration:underline;}
       🎥 Creadores de Contenido
       <span class="tab-count" id="count-creadores">—</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('visita')">
+      🏘️ Visita de Caracterización
+      <span class="tab-count" id="count-visita">—</span>
+    </button>
   </div>
 
   <div class="app">
@@ -323,6 +327,12 @@ td a:hover{text-decoration:underline;}
       <div class="loading" id="loading-creadores"><div class="loading-spinner"></div>Cargando datos...</div>
       <div class="acc-list" id="acclist-creadores" style="display:none;"></div>
       <div class="empty" id="empty-creadores" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
+    </div>
+
+    <div class="tab-panel" id="panel-visita">
+      <div class="loading" id="loading-visita"><div class="loading-spinner"></div>Cargando datos...</div>
+      <div class="acc-list" id="acclist-visita" style="display:none;"></div>
+      <div class="empty" id="empty-visita" style="display:none;"><div class="empty-icon">🔎</div>Sin resultados</div>
     </div>
   </div>
 </div>
@@ -404,7 +414,8 @@ var CSV_URLS = {
   delirio:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqZ5zncTvdvHMOnLuPSlFgFOxnU0NddjhTxU2GPhFuj1V3cuLav8d2uUbGpn4Pk1Taf73D13GFDXBW/pub?gid=200425436&single=true&output=csv",
   simposio:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRmCYve8OoB3lPMj08sjroaJyWOfH8o51M-9Kvy5DYbUVHVFxtmWr4BBSNBJWWVTPT8d_USQD0CBXcO/pub?output=csv",
   rutas:     "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnoSaOqdTGB5StRrr8pVoDC9hhhMkNbeJ0mACMR8pAiwuTKjAAUThQTUagyyJAcKLXo-tTzZusLZMc/pub?output=csv",
-  creadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRL8Q2DBahNGY5KV53-R1xCTNd2heT1_Aa-X7eTXLan71OuqzoUXFYVQgz94ePxGqwKGQXNPxJ0DAfm/pub?output=csv"
+  creadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRL8Q2DBahNGY5KV53-R1xCTNd2heT1_Aa-X7eTXLan71OuqzoUXFYVQgz94ePxGqwKGQXNPxJ0DAfm/pub?output=csv",
+  visita:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQD9osqJlf4IS-eLOc7JOJmHxad0EQY_pckNjPOrw17Cikk0eY4yoJgcZ6a5wBbqC9f58FH0Ndtelo-/pub?output=csv"
 };
 
 // Web App (Apps Script) que escribe Aprobación/Comentarios en el Sheet de Delirio Turístico
@@ -419,16 +430,26 @@ var EXCLUDED_COLUMNS = {
   delirio: ['Aprobaciones', 'Comentarios'],
   simposio: [],
   rutas: [],
-  creadores: []
+  creadores: [],
+  visita: []
 };
 
 // Pestañas que se muestran como lista acordeón (Consecutivo + Nombre) en vez de tabla
-var ACCORDION_TABS = ['delirio', 'simposio', 'rutas', 'creadores'];
+var ACCORDION_TABS = ['delirio', 'simposio', 'rutas', 'creadores', 'visita'];
 
 function resolverNombre(row) {
   var nombre = ((row['Nombres'] || '') + ' ' + (row['Apellidos'] || '')).trim();
   if (nombre) return nombre;
-  return row['Nombre completo'] || row['Nombre'] || '(sin nombre)';
+  if (row['Nombre completo']) return row['Nombre completo'];
+  if (row['Nombre']) return row['Nombre'];
+  if (row['6. Nombre de la persona entrevistada']) return row['6. Nombre de la persona entrevistada'];
+  if (row['5. Nombre del emprendimiento, establecimiento, organización o atractivo']) return row['5. Nombre del emprendimiento, establecimiento, organización o atractivo'];
+  return '(sin nombre)';
+}
+
+// Todas las pestañas ya tienen columna "Consecutivo" real.
+function resolverConsecutivo(tab, row, i) {
+  return row['Consecutivo'] || (i + 1);
 }
 
 // Apartados del detalle de "Creadores de Contenido" — mismo orden del formulario original
@@ -524,6 +545,154 @@ function renderCreadoresDetail(row, headers) {
   return html;
 }
 
+// Apartados del detalle de "Visita de Caracterización" — mismo orden del formulario original.
+var VISITA_LABEL_OVERRIDES = {};
+
+var VISITA_SECTIONS = [
+  { title: '📋 Registro', fields: [
+    'Consecutivo', 'Marca temporal', '1. ¿La persona entrevistada manifiesta haber recibido y comprendido la información anterior?',
+    '2. Fecha de la visita', '3. Nombre del profesional'
+  ]},
+  { title: '🎯 Filtro Inicial de Vocación Turística', fields: [
+    '¿Actualmente recibe personas que visitan San Cristóbal provenientes de otras localidades de Bogotá, municipios, ciudades del país o de otros países?',
+    '¿Su actividad ofrece actualmente algún producto, servicio, atractivo o experiencia que pueda ser de interés para visitantes?',
+    '¿Los visitantes hacen uso, compran, consumen o participan actualmente en alguno de sus productos, servicios o experiencias?',
+    '¿Considera que su actividad podría convertirse o fortalecerse como una experiencia, producto o servicio turístico?',
+    '¿Cuál considera que es actualmente la principal relación de su actividad con el turismo?',
+    'Resultado preliminar del filtro', 'Observaciones del profesional (opcional)'
+  ]},
+  { title: '🧑 Información General del Actor', fields: [
+    '5. Nombre del emprendimiento, establecimiento, organización o atractivo', '6. Nombre de la persona entrevistada',
+    '7. Cargo o relación con el emprendimiento', '8. Número de teléfono / WhatsApp', '9. Correo electrónico',
+    '10. ¿Cuenta con NIT?', '11. NIT'
+  ]},
+  { title: '📍 Dirección', fields: [
+    '12. Dirección', '13. Barrio', '14. Ubicación en Google Maps',
+    '15. ¿La actividad se desarrolla en un establecimiento físico?', '16. ¿Cuál es el tipo de actor que estamos visitando?'
+  ]},
+  { title: '🏛️ Información Histórica y Trayectoria', fields: [
+    '17. ¿Hace cuánto desarrolla esta actividad?', '18. ¿En qué año inició esta actividad?',
+    '19. ¿La actividad ha cambiado desde que inició?', '20. Breve historia del emprendimiento o actividad'
+  ]},
+  { title: '🎯 Filtro de Vocación Turística', fields: [
+    '21. ¿Ha realizado alguna actividad turística con personas provenientes de otras localidades, ciudades, municipios o países?',
+    '22. ¿Su actividad ofrece actualmente un producto, servicio, atractivo o experiencia que pueda ser disfrutada por visitantes?',
+    '23. ¿Cuál es el principal motivo por el que un visitante llega a su actividad o establecimiento?',
+    '24. ¿Qué puede hacer, conocer, comprar o experimentar un visitante en este lugar?',
+    '25. ¿Estaría dispuesto a integrar su actividad en una ruta o experiencia turística de San Cristóbal?'
+  ]},
+  { title: '💼 Actividad y Oferta', fields: [
+    '26. ¿Cuál es la actividad principal?', '27. ¿Tiene otras actividades relacionadas?',
+    '28. ¿Cuáles son sus tres principales productos o servicios?', '29. ¿Cuál es el producto o servicio más solicitado por los visitantes?',
+    '30. ¿Tiene algún producto, servicio o experiencia diseñada específicamente para turistas o visitantes?',
+    '31. Describa brevemente esa experiencia'
+  ]},
+  { title: '📣 Comunicaciones, Promoción y Comercialización', fields: [
+    '32. ¿Tiene presencia en redes sociales?', '33. Indique los enlaces de sus redes sociales',
+    '34. ¿Cuenta con página web?', '35. Enlace de la página web', '36. ¿Cuenta con piezas de promoción de su actividad?',
+    '37. ¿Realiza ventas o reservas por medios digitales?', '38. ¿A través de cuáles medios realiza ventas o reservas digitales?',
+    '39. ¿Qué otros medios utiliza para promocionar su actividad?', '40. ¿Cuál considera que es actualmente su principal canal de promoción?'
+  ]},
+  { title: '👥 Perfil de los Visitantes', fields: [
+    '41. ¿Qué tipo de visitantes atiende?', '42. ¿De qué ciudades colombianas provienen principalmente sus visitantes?',
+    '43. ¿De qué países provienen principalmente sus visitantes internacionales?', '44. ¿Qué grupo de edad predomina entre sus visitantes?',
+    '45. ¿Qué género predomina entre sus visitantes?', '46. ¿Qué tipo de población atiende principalmente?'
+  ]},
+  { title: '🚶 Comportamiento y Movilidad del Visitante', fields: [
+    '47. ¿Cómo suelen llegar los visitantes?', '48. ¿Cómo llegan principalmente al establecimiento?',
+    '49. ¿Cómo conocieron principalmente el establecimiento o experiencia?'
+  ]},
+  { title: '⏱️ Tiempo y Afluencia', fields: [
+    '50. ¿Cuáles son los días de mayor afluencia?', '51. ¿Cuál es la jornada de mayor afluencia?',
+    '52. ¿Cuál es el horario habitual de funcionamiento?', '53. ¿Cuánto tiempo permanece aproximadamente un visitante en el lugar?'
+  ]},
+  { title: '🔢 Número de Visitantes', fields: [
+    '54. ¿Cuántos visitantes atiende aproximadamente en un día normal?', '55. ¿Cuántos visitantes atiende aproximadamente en un mes?',
+    '56. ¿Cuándo recibe mayor cantidad de visitantes?'
+  ]},
+  { title: '💰 Aspectos Financieros', fields: [
+    '57. ¿Cuál es aproximadamente el rango de ingresos mensuales generados por esta actividad?',
+    '58. ¿Qué porcentaje aproximado de sus ingresos proviene de visitantes o actividades turísticas?',
+    '59. ¿Cuál es su principal fuente de ingresos?', '60. ¿Cuáles son sus principales costos operativos?',
+    '61. ¿Cuál es su principal necesidad financiera?'
+  ]},
+  { title: '💳 Métodos de Pago', fields: [
+    '62. ¿Qué medios de pago utilizan sus visitantes?', '63. ¿Cuál es el medio de pago más utilizado?'
+  ]},
+  { title: '👔 Empleo y Economía Local', fields: [
+    '64. ¿Cuántas personas trabajan actualmente en el emprendimiento?', '65. ¿Cuántas de estas personas viven en San Cristóbal?',
+    '66. ¿Compra productos o servicios a proveedores de San Cristóbal?', '67. ¿Qué productos o servicios compra localmente?',
+    '68. Aproximadamente, ¿qué porcentaje de sus compras proviene de proveedores de San Cristóbal?'
+  ]},
+  { title: '🆘 Necesidades de los Visitantes', fields: [
+    '69. ¿Qué necesidades o dificultades identifica con mayor frecuencia entre los visitantes?',
+    '70. ¿Qué le solicitan los visitantes que actualmente usted no puede ofrecer?'
+  ]},
+  { title: '🗺️ Rutas y Productos Turísticos', fields: [
+    '71. ¿En qué tipo de ruta considera que podría participar?',
+    '72. ¿Qué otros lugares, emprendimientos o atractivos deberían integrarse con usted en esa ruta?',
+    '73. ¿Qué experiencia podría aportar a una ruta turística?', '74. ¿Cuánto tiempo puede dedicar a recibir un grupo de visitantes?',
+    '75. ¿Cuál considera que es el principal atractivo de su actividad para un visitante?'
+  ]},
+  { title: '🌱 Sostenibilidad Ambiental', fields: [
+    '76. ¿Realiza separación de residuos?', '77. ¿Qué tipo de separación realiza?', '78. ¿Realiza acciones para ahorrar agua?',
+    '79. ¿Realiza acciones para ahorrar energía?', '80. ¿Realiza alguna otra acción de sostenibilidad ambiental?'
+  ]},
+  { title: '📝 Observación Técnica del Profesional', fields: [
+    '81. Evaluación técnica [Infraestructura]', '81. Evaluación técnica [Accesibilidad]', '81. Evaluación técnica [Señalización]',
+    '81. Evaluación técnica [Higiene]', '81. Evaluación técnica [Seguridad]', '81. Evaluación técnica [Atención al visitante]',
+    '81. Evaluación técnica [Calidad del producto/servicio]', '81. Evaluación técnica [Capacidad para recibir visitantes]',
+    '81. Evaluación técnica [Sostenibilidad]', '81. Evaluación técnica [Gestión de residuos]',
+    '81. Evaluación técnica [Ahorro de agua y energía]', '81. Evaluación técnica [Potencial para integrarse a una ruta]'
+  ]},
+  { title: '⚖️ Formalización', fields: [
+    '82. ¿Cuenta con Registro Único Tributario - RUT?', '83. ¿Cuenta con matrícula o registro en Cámara de Comercio?',
+    '84. ¿Cuenta con Registro Nacional de Turismo - RNT?', '85. ¿Cuenta con otros permisos o registros requeridos para su actividad?'
+  ]},
+  { title: '🏷️ Clasificación Técnica', fields: [
+    '86. ¿Cómo se clasifica técnicamente este actor?', '87. Nivel de prioridad para el proyecto',
+    '88. ¿Debe integrar el Directorio de Turismo de San Cristóbal?', '89. ¿Qué tipo de fortalecimiento requiere?'
+  ]},
+  { title: '📸 Evidencias y Concepto Final', fields: [
+    '90. Fotografía de la fachada o lugar', '91. Fotografía del producto/servicio', '92. Fotografía del entorno',
+    '93. ¿Existe alguna evidencia documental que deba anexarse?', '94. Fortalezas principales identificadas',
+    '95. Principales debilidades o dificultades', '96. Principal oportunidad turística',
+    '97. Recomendación para integrar este actor a una ruta', '98. ¿Requiere una segunda visita?',
+    '99. Observaciones adicionales', '100. Adjuntar firma'
+  ]},
+  { title: '📎 Documentos del Sistema', fields: ['Carpeta Final', 'PDF Final'] }
+];
+
+function renderVisitaDetail(row, headers) {
+  var mostrados = {};
+  VISITA_SECTIONS.forEach(function(sec){ sec.fields.forEach(function(f){ mostrados[f] = true; }); });
+
+  var html = VISITA_SECTIONS.map(function(sec){
+    var presentes = sec.fields.filter(function(f){ return headers.indexOf(f) !== -1; });
+    if (!presentes.length) return '';
+    var campos = presentes.map(function(h){
+      var label = VISITA_LABEL_OVERRIDES[h] || h;
+      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(label)+'</div>' +
+        '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
+    }).join('');
+    return '<div class="detail-section"><div class="detail-section-title">'+sec.title+'</div>' +
+      '<div class="detail-grid">'+campos+'</div></div>';
+  }).join('');
+
+  var otros = headers.filter(function(h){ return !mostrados[h]; });
+  if (otros.length) {
+    var camposOtros = otros.map(function(h){
+      var label = VISITA_LABEL_OVERRIDES[h] || h;
+      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(label)+'</div>' +
+        '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
+    }).join('');
+    html += '<div class="detail-section"><div class="detail-section-title">ℹ️ Otros campos</div>' +
+      '<div class="detail-grid">'+camposOtros+'</div></div>';
+  }
+
+  return html;
+}
+
 function parseCSV(text) {
   text = text.replace(/^\uFEFF/, "");
   var rows = [];
@@ -604,7 +773,7 @@ function renderAccordion(tab) {
   var list = document.getElementById("acclist-" + tab);
   list.innerHTML = data.map(function(row, i){
     var id = tab + "-" + i;
-    var num = row['Consecutivo'] || (i + 1);
+    var num = resolverConsecutivo(tab, row, i);
     var nombre = resolverNombre(row);
     var searchStr = headers.map(function(h){ return row[h] || ""; }).join(" ").toLowerCase().replace(/"/g,"&quot;");
     var detailFields = headers.filter(function(h){
@@ -612,6 +781,8 @@ function renderAccordion(tab) {
     });
     var detailHtml = tab === 'creadores'
       ? renderCreadoresDetail(row, headers)
+      : tab === 'visita'
+      ? renderVisitaDetail(row, headers)
       : detailFields.map(function(h){
           return '<div class="detail-item"><div class="detail-label">'+escapeHtml(h)+'</div>' +
             '<div class="detail-value">'+cellHtml(row[h])+'</div></div>';
@@ -666,7 +837,7 @@ function renderAccordion(tab) {
         '<span class="acc-chevron">▼</span>' +
       '</div>' +
       '<div class="acc-detail" id="accdetail-'+id+'">' +
-        (tab === 'creadores' ? detailHtml : '<div class="detail-grid">'+detailHtml+'</div>') +
+        ((tab === 'creadores' || tab === 'visita') ? detailHtml : '<div class="detail-grid">'+detailHtml+'</div>') +
         approvalHtml +
       '</div>' +
     '</div>';
@@ -780,6 +951,7 @@ function cargarTodo() {
   loadTab("simposio");
   loadTab("rutas");
   loadTab("creadores");
+  loadTab("visita");
 }
 
 function filterRows() {
@@ -807,7 +979,7 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
   document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
-  var idx = ["delirio","simposio","rutas","creadores"].indexOf(tab);
+  var idx = ["delirio","simposio","rutas","creadores","visita"].indexOf(tab);
   document.querySelectorAll(".tab-btn")[idx].classList.add("active");
   document.getElementById("panel-"+tab).classList.add("active");
   document.getElementById("searchInput").value = "";
