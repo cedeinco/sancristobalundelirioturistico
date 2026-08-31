@@ -203,6 +203,31 @@ td a:hover{text-decoration:underline;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
 
+/* ===== FICHA DE CARACTERIZACIÓN — checkboxes, archivos y grilla responsive ===== */
+input[type="checkbox"], input[type="radio"]{
+  width:auto;height:16px;padding:0;border:none;background:none;box-shadow:none;
+  accent-color:var(--terracotta);margin:0;flex-shrink:0;cursor:pointer;
+}
+input[type="file"]{
+  padding:8px 10px;font-size:12px;background:#fbfaf6;cursor:pointer;
+}
+.carac-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;}
+.carac-grid .detail-item-full{grid-column:1 / -1;}
+.carac-check-list{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:6px;background:#fff;max-height:220px;overflow-y:auto;}
+.carac-check-item{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:400;
+  text-transform:none;letter-spacing:0;padding:7px 8px;border-radius:6px;cursor:pointer;transition:background .12s;}
+.carac-check-item:hover{background:#f1efe8;}
+@media(max-width:720px){
+  .carac-grid{grid-template-columns:1fr;gap:12px;}
+  .carac-check-item{padding:9px 8px;font-size:13px;}
+  .carac-check-list{max-height:none;}
+  .approval-box .btn-primary{width:100%;}
+  .approval-box .btn{width:100%;margin-top:8px;margin-left:0 !important;display:block;}
+  .detail-label{font-size:10.5px;}
+}
+
+
 @media(max-width:720px){
   .topbar{padding:0 16px;}
   .topbar-sub{display:none;}
@@ -211,9 +236,37 @@ td a:hover{text-decoration:underline;}
   .login-body{padding:26px 22px 30px;}
   .login-card{width:100%;}
 }
+
+/* ===== OVERLAY DE PANTALLA COMPLETA (guardando ficha) ===== */
+.global-overlay{position:fixed;inset:0;background:rgba(246,244,238,0.94);z-index:9999;
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.global-overlay.show{display:flex;}
+.global-overlay .loading-spinner{margin:0;}
+.global-overlay-text{font-size:15px;font-weight:700;color:var(--green-text);text-align:center;padding:0 24px;}
+
+/* ===== BANNER — link al formulario de la 1a etapa (Delirio Turístico) ===== */
+.banner-formulario{display:flex;align-items:center;gap:12px;text-decoration:none;
+  background:linear-gradient(135deg,var(--terracotta) 0%,var(--terracotta-light) 100%);
+  color:#fff;padding:15px 20px;border-radius:var(--radius);margin-bottom:18px;
+  box-shadow:var(--shadow-sm);transition:transform .15s ease,box-shadow .15s ease;}
+.banner-formulario:hover{transform:translateY(-1px);box-shadow:var(--shadow);}
+.banner-formulario-icono{font-size:20px;flex-shrink:0;}
+.banner-formulario-texto{flex:1;font-size:13.5px;font-weight:700;line-height:1.4;}
+.banner-formulario-flecha{font-size:18px;font-weight:700;flex-shrink:0;transition:transform .15s ease;}
+.banner-formulario:hover .banner-formulario-flecha{transform:translateX(3px);}
+@media(max-width:640px){
+  .banner-formulario{padding:13px 16px;}
+  .banner-formulario-texto{font-size:12.5px;}
+}
 </style>
 </head>
 <body>
+
+<div class="global-overlay" id="globalOverlay">
+  <div class="loading-spinner"></div>
+  <div class="global-overlay-text" id="globalOverlayText">Guardando...</div>
+</div>
+
 
 <!-- ============ LOGIN ============ -->
 <div class="login-wrap" id="loginWrap">
@@ -305,6 +358,11 @@ td a:hover{text-decoration:underline;}
     </div>
 
     <div class="tab-panel active" id="panel-delirio">
+      <a href="https://forms.gle/y6xgCD61eyCBaQV37" target="_blank" rel="noopener" class="banner-formulario">
+        <span class="banner-formulario-icono">📋</span>
+        <span class="banner-formulario-texto">¿No apareces en la base de datos de la 1ª etapa? Diligencia el siguiente formulario</span>
+        <span class="banner-formulario-flecha">→</span>
+      </a>
       <div class="stats-bar" id="statsDelirio" style="display:none;"></div>
       <div class="loading" id="loading-delirio"><div class="loading-spinner"></div>Cargando datos...</div>
       <div class="acc-list" id="acclist-delirio" style="display:none;"></div>
@@ -419,7 +477,7 @@ var CSV_URLS = {
 };
 
 // Web App (Apps Script) que escribe Aprobación/Comentarios en el Sheet de Delirio Turístico
-var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeZ6iyB43n9W2W6uqavElmoLSonYr2JUF9V7UBpLuXjNLJWfUwbuh3baORYHPDSbU0/exec";
+var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbweoD45qoBt_D-kV0WiPiJsbYUnSBnuDO-34dc45T8UFyXd7fhne5UGuBtz5A8cP_l3/exec";
 
 var DATA = { delirio: [], simposio: [], rutas: [] };
 var HEADERS = { delirio: [], simposio: [], rutas: [] };
@@ -790,6 +848,7 @@ function renderAccordion(tab) {
 
     var estadoPillHtml = "";
     var approvalHtml = "";
+    var caracterizacionHtml = "";
     if (tab === 'delirio') {
       var consecutivoStr = String(num).replace(/'/g, "\\'");
       var estadoActual = (row['Aprobaciones'] || '').trim();
@@ -827,6 +886,14 @@ function renderAccordion(tab) {
             '<div class="approval-msg" id="msg-'+id+'"></div>' +
           '</div>' +
         '</div>';
+
+      // ===== Ficha de Caracterización (carga bajo demanda) =====
+      caracterizacionHtml =
+        '<div class="approval-box">' +
+          '<div class="approval-title">📋 Ficha de Caracterización</div>' +
+          '<button class="btn btn-primary" style="width:auto;" onclick="abrirFichaCaracterizacion(\''+consecutivoStr+'\')">Abrir / cargar ficha</button>' +
+          '<div id="caracContainer-'+consecutivoStr+'" style="margin-top:14px;"></div>' +
+        '</div>';
     }
 
     return '<div class="acc-row" data-search="'+searchStr+'">' +
@@ -838,6 +905,7 @@ function renderAccordion(tab) {
       '</div>' +
       '<div class="acc-detail" id="accdetail-'+id+'">' +
         ((tab === 'creadores' || tab === 'visita') ? detailHtml : '<div class="detail-grid">'+detailHtml+'</div>') +
+        caracterizacionHtml +
         approvalHtml +
       '</div>' +
     '</div>';
@@ -860,6 +928,439 @@ function renderStatsDelirio() {
     '<div class="stat-card aprobado"><div class="stat-label">Aprobados</div><div class="stat-value">'+aprobados+'</div></div>' +
     '<div class="stat-card rechazado"><div class="stat-label">Rechazados</div><div class="stat-value">'+rechazados+'</div></div>';
   el.style.display = 'grid';
+}
+
+/****************************************************************
+ * MÓDULO: Ficha de Caracterización (Delirio Turístico)
+ * Pega este bloque completo DENTRO de la etiqueta <script> del panel
+ * existente, justo ANTES de la línea: function toggleAcc(id) { ... }
+ ****************************************************************/
+
+// URL del mismo Web App que ya usas para guardarAprobacionWeb
+// (WEBAPP_URL ya existe en tu panel — no la dupliques, este módulo la reutiliza)
+
+var CARACT_QUESTIONS = [
+  // ---- Sección 2: Control de la visita ----
+  { id:'Q1_FechaVisita', section:2, label:'1. Fecha de la visita', type:'date', required:true },
+  { id:'Q2_Profesional', section:2, label:'2. Nombre del profesional/encuestador', type:'text', required:true },
+  { id:'Q4_NombreEmprendimiento', section:2, label:'4. Nombre del emprendimiento/establecimiento/organización/atractivo', type:'text', required:true },
+  { id:'Q5_NombreInformante', section:2, label:'5. Nombre de la persona que suministra la información', type:'text', required:true },
+  { id:'Q6_Relacion', section:2, label:'6. ¿Cuál es su relación con la actividad?', type:'select',
+    options:['Propietario/a','Representante legal','Administrador/a','Emprendedor/a','Integrante de organización o colectivo','Trabajador/a','Otro'] },
+  { id:'Q7_Contacto', section:2, label:'7. Datos de contacto (teléfono/WhatsApp)', type:'text' },
+  { id:'Q8_Ubicacion', section:2, label:'8. Ubicación del establecimiento', type:'text' },
+  { id:'Q9_Barrio', section:2, label:'9. Barrio', type:'text' },
+  { id:'Q10_UbicacionMaps', section:2, label:'10. Ubicación en Google Maps (enlace)', type:'text' },
+
+  // ---- Sección 3: Filtro de vinculación turística (las 5 preguntas clave) ----
+  { id:'Q11_RecibeVisitantes', section:3, filtro:true, label:'11. ¿Actualmente recibe, atiende o presta servicios a visitantes o turistas?', type:'select',
+    options:['Sí, frecuentemente.','Sí, ocasionalmente.','Muy pocas veces.','No actualmente.'] },
+  { id:'Q12_OfreceAlgoInteres', section:3, filtro:true, label:'12. ¿Su actividad ofrece algo de interés para visitantes?', type:'select', options:['Sí.','Parcialmente.','No.'] },
+  { id:'Q13_VisitantesCompran', section:3, filtro:true, label:'13. ¿Los visitantes compran, consumen o participan en lo que ofrece?', type:'select',
+    options:['Sí, representan una parte importante de la actividad.','Sí, pero representan una parte pequeña.','Ocasionalmente.','No actualmente.'] },
+  { id:'Q14_ProductoParaTuristas', section:3, filtro:true, label:'14. ¿Tiene un producto/experiencia diseñado para turistas?', type:'select',
+    options:['Sí.','Está en proceso de desarrollarlo.','No.'] },
+  { id:'Q15_PodriaIntegrarseRuta', section:3, filtro:true, label:'15. ¿Podría integrarse o fortalecerse como parte de una ruta turística?', type:'select',
+    options:['Sí, claramente.','Sí, pero requiere fortalecimiento.','No está seguro/a.','No.'] },
+
+  // ---- Sección 4: Actividad y trayectoria ----
+  { id:'Q16_ActividadPrincipal', section:4, showIf:'potencial_o_activo', label:'16. Actividad principal', type:'select',
+    options:['Gastronomía/alimentación','Cultura y arte','Patrimonio/historia','Turismo religioso','Naturaleza/ecoturismo','Recreación/deporte','Alojamiento','Guianza','Operación turística','Artesanía','Turismo comunitario','Comercio','Otra'] },
+  { id:'Q17_ActividadSecundaria', section:4, showIf:'potencial_o_activo', label:'17. Actividad secundaria relacionada con turismo', type:'checkbox',
+    options:['Gastronomía/alimentación','Cultura y arte','Patrimonio/historia','Turismo religioso','Naturaleza/ecoturismo','Recreación/deporte','Alojamiento','Guianza','Operación turística','Artesanía','Turismo comunitario','Comercio','Otra'] },
+  { id:'Q18_AnioInicio', section:4, showIf:'potencial_o_activo', label:'18. ¿Desde qué año desarrolla esta actividad?', type:'number' },
+  { id:'Q19_ActividadActiva', section:4, showIf:'potencial_o_activo', label:'19. ¿La actividad está activa?', type:'select',
+    options:['Sí, permanentemente.','Sí, por temporadas.','Intermitentemente.','No actualmente.'] },
+  { id:'Q20_DescripcionActividad', section:4, showIf:'potencial_o_activo', label:'20. Describa brevemente la actividad, producto o servicio', type:'textarea' },
+
+  // ---- Sección 5: Oferta y potencial ----
+  { id:'Q21_PrincipalesProductos', section:5, showIf:'potencial_o_activo', label:'21. Principales productos, servicios o experiencias', type:'textarea' },
+  { id:'Q22_PrincipalAtractivo', section:5, showIf:'potencial_o_activo', label:'22. Principal atractivo para un visitante', type:'textarea' },
+  { id:'Q23_TipoExperiencia', section:5, showIf:'potencial_o_activo', label:'23. Tipo de experiencia que puede ofrecer', type:'checkbox',
+    options:['Gastronómica','Cultural','Artística','Religiosa','Histórica/patrimonial','Naturaleza','Comunitaria','Recreativa/deportiva','Otra'] },
+  { id:'Q24_ProductoMasSolicitado', section:5, showIf:'potencial_o_activo', label:'24. Producto/servicio más solicitado', type:'text' },
+  { id:'Q25_ProductoEstructurado', section:5, showIf:'potencial_o_activo', label:'25. ¿Cuenta con producto/paquete/recorrido estructurado?', type:'select', options:['Sí.','En proceso.','No.'] },
+  { id:'Q26_AporteRuta', section:5, showIf:'potencial_o_activo', label:'26. ¿Qué podría aportar a una ruta turística?', type:'textarea' },
+  { id:'Q27_ArticulacionCon', section:5, showIf:'potencial_o_activo', label:'27. ¿Con qué otros actores podría articularse?', type:'textarea' },
+
+  // ---- Sección 6: Visitantes y demanda (solo actor activo) ----
+  { id:'Q28_TipoVisitantes', section:6, showIf:'activo', label:'28. Tipo de visitantes que atiende', type:'checkbox',
+    options:['Residentes de San Cristóbal.','Visitantes de otras localidades de Bogotá.','Visitantes de otros municipios.','Turistas nacionales.','Turistas internacionales.','No recibe visitantes actualmente.'] },
+  { id:'Q29_CiudadesOrigen', section:6, showIf:'activo', label:'29. Ciudades/municipios de origen principal', type:'textarea' },
+  { id:'Q30_PaisesOrigen', section:6, showIf:'activo', label:'30. Países de origen de visitantes internacionales', type:'textarea' },
+  { id:'Q31_ComoConocieron', section:6, showIf:'activo', label:'31. ¿Cómo conocieron el lugar?', type:'checkbox',
+    options:['Voz a voz/recomendación','Redes sociales','Página web','Publicidad','Eventos o ferias','Agencias u operadores turísticos','Instituciones educativas','Hoteles/alojamientos','Guías turísticos','Otro'] },
+  { id:'Q32_EdadPredominante', section:6, showIf:'activo', label:'32. Grupo de edad predominante', type:'select', options:['Niños','Adolescentes','Jóvenes','Adultos','Adultos mayores','Público diverso','No tiene información'] },
+  { id:'Q33_GeneroPredominante', section:6, showIf:'activo', label:'33. Género predominante', type:'select', options:['Mujeres','Hombres','Mixto/equilibrado','No tiene información'] },
+  { id:'Q34_TipoPoblacion', section:6, showIf:'activo', label:'34. Tipo de población que atiende', type:'checkbox',
+    options:['Familias','Jóvenes','Adultos','Adultos mayores','Colegios','Universidades','Empresas','Grupos comunitarios','Parejas','Otro'] },
+  { id:'Q35_ComoLlegan', section:6, showIf:'activo', label:'35. ¿Cómo suelen llegar los visitantes?', type:'checkbox',
+    options:['Solos','En pareja','Con familia','Con amigos','Grupos organizados','Colegios','Empresas','Otro'] },
+  { id:'Q36_MedioTransporte', section:6, showIf:'activo', label:'36. ¿Cómo llegan principalmente al lugar?', type:'select',
+    options:['A pie','Transporte público','Vehículo particular','Transporte turístico','Bicicleta','Otro'] },
+  { id:'Q37_PromedioVisitantes', section:6, showIf:'activo', label:'37. Promedio de visitantes', type:'select',
+    options:['Menos de 10','10-20','21-50','51-100','Más de 100','No sabe/no lleva registro'] },
+  { id:'Q38_MomentosAfluencia', section:6, showIf:'activo', label:'38. Días/momentos de mayor afluencia', type:'checkbox',
+    options:['Entre semana','Fines de semana','Festivos','Vacaciones','Semana Santa','Eventos especiales','Otra temporada'] },
+  { id:'Q39_TiempoPermanencia', section:6, showIf:'activo', label:'39. Tiempo de permanencia del visitante', type:'select',
+    options:['Menos de 30 minutos','30 minutos-1 hora','1-2 horas','2-4 horas','Más de 4 horas'] },
+
+  // ---- Sección 7: Promoción, comunicación y ventas digitales (solo activo) ----
+  { id:'Q40_MediosPromocion', section:7, showIf:'activo', label:'40. Medios que utiliza para promocionar', type:'checkbox',
+    options:['Instagram','Facebook','TikTok','YouTube','WhatsApp/WhatsApp Business','Página web','Voz a voz','Eventos/ferias','Publicidad física','Alianzas','Otro','Ninguno'] },
+  { id:'Q41_EnlacesRedes', section:7, showIf:'activo', label:'41. Enlaces de redes sociales o página web', type:'textarea' },
+  { id:'Q42_PiezasPromocion', section:7, showIf:'activo', label:'42. ¿Cuenta con piezas de promoción?', type:'select', options:['Sí, digitales.','Sí, impresas.','Ambas.','No.'] },
+  { id:'Q43_VentasDigitales', section:7, showIf:'activo', label:'43. ¿Realiza ventas/reservas por medios digitales?', type:'select', options:['Sí.','Parcialmente.','No.'] },
+  { id:'Q44_PrincipalCanal', section:7, showIf:'activo', label:'44. Principal canal de promoción', type:'select',
+    options:['Instagram','Facebook','TikTok','WhatsApp','Página web','Voz a voz','Eventos/ferias','Publicidad física','Alianzas','Otro','Ninguno'] },
+  { id:'Q45_MediosPago', section:7, showIf:'activo', label:'45. Medios de pago que utilizan sus clientes', type:'checkbox',
+    options:['Efectivo','Tarjeta débito','Tarjeta crédito','Transferencia bancaria','Nequi','Daviplata','QR','Otro'] },
+
+  // ---- Sección 8: Economía, empleo y aporte local (solo activo) ----
+  { id:'Q46_PersonasTrabajan', section:8, showIf:'activo', label:'46. Personas que trabajan en la actividad', type:'number' },
+  { id:'Q47_TrabajanSanCristobal', section:8, showIf:'activo', label:'47. De ellas, ¿cuántas viven en San Cristóbal?', type:'number' },
+  { id:'Q48_ComprasProveedoresLocales', section:8, showIf:'activo', label:'48. ¿Compra a proveedores de San Cristóbal?', type:'select', options:['Sí, principalmente.','Sí, parcialmente.','Muy poco.','No.'] },
+  { id:'Q49_PrincipalFuenteIngresos', section:8, showIf:'activo', label:'49. Principal fuente de ingresos', type:'checkbox',
+    options:['Actividad turística','Residentes/locales','Empresas','Instituciones','Eventos','Otra'] },
+  { id:'Q50_CostosOperativos', section:8, showIf:'activo', label:'50. Principales costos operativos', type:'checkbox',
+    options:['Arriendo','Servicios públicos','Personal','Insumos','Transporte','Impuestos/trámites','Publicidad','Mantenimiento','Otro'] },
+  { id:'Q51_PorcentajeComprasLocales', section:8, showIf:'activo', label:'51. % de compras a proveedores locales', type:'select',
+    options:['Menos del 25%','25-50%','51-75%','Más del 75%','No sabe'] },
+  { id:'Q52_PorcentajeIngresosTuristicos', section:8, showIf:'activo', label:'52. % de ingresos proveniente de turismo', type:'select',
+    options:['Menos del 25%','25-50%','51-75%','Más del 75%','No sabe/no aplica'] },
+  { id:'Q53_PrincipalNecesidad', section:8, showIf:'potencial_o_activo', label:'53. Principal necesidad para fortalecer la actividad', type:'checkbox',
+    options:['Financiación','Formación','Marketing','Comercialización','Diseño de producto turístico','Diseño de experiencias','Formalización','Infraestructura','Equipamiento','Seguridad','Accesibilidad','Articulación con otros actores','Otra'] },
+
+  // ---- Sección 9: Sostenibilidad ambiental (potencial o activo) ----
+  { id:'Q54_SeparacionResiduos', section:9, showIf:'potencial_o_activo', label:'54. ¿Realiza separación de residuos?', type:'select', options:['Sí, permanentemente.','Algunas veces.','No.'] },
+  { id:'Q55_AhorroAguaEnergia', section:9, showIf:'potencial_o_activo', label:'55. Acciones de ahorro de agua/energía', type:'checkbox',
+    options:['Ahorro de agua','Ahorro de energía','Uso de iluminación eficiente','Reutilización','Aprovechamiento de luz natural','Otra','Ninguna'] },
+  { id:'Q56_OtraSostenibilidad', section:9, showIf:'potencial_o_activo', label:'56. Otra acción de sostenibilidad ambiental', type:'textarea' },
+
+  // ---- Sección 10: Formalización (solo si aplica - potencial o activo) ----
+  { id:'Q57_RUT', section:10, showIf:'potencial_o_activo', label:'57. ¿Cuenta con RUT?', type:'select', options:['Sí.','No.','En trámite.','No aplica.','Prefiere no responder.'] },
+  { id:'Q58_CamaraComercio', section:10, showIf:'potencial_o_activo', label:'58. ¿Registro en Cámara de Comercio?', type:'select', options:['Sí.','No.','En trámite.','No aplica.','Prefiere no responder.'] },
+  { id:'Q59_RNT', section:10, showIf:'potencial_o_activo', label:'59. ¿Cuenta con RNT?', type:'select', options:['Sí.','No.','En trámite.','No aplica.','No sabe.'] },
+
+  // ---- Sección 11: Necesidades del visitante y articulación (siempre, aun sin vínculo) ----
+  { id:'Q60_NecesidadesVisitantes', section:11, label:'60. Necesidades que identifica en sus visitantes', type:'checkbox',
+    options:['Información turística','Señalización','Transporte','Seguridad','Baños','Alimentación','Lugares para descansar','Conectividad','Guianza','Accesibilidad','Información en otros idiomas','Actividades culturales','Actividades de naturaleza','Otra'] },
+  { id:'Q61_NecesidadNoAtendida', section:11, label:'61. Necesidad de los visitantes que no puede atender', type:'textarea' },
+  { id:'Q62_InteresParticipar', section:11, label:'62. ¿Interesado en participar en una ruta/estrategia turística?', type:'select',
+    options:['Sí.','Sí, con condiciones.','No por ahora.','No sabe.'] },
+
+  // ---- Sección 12a: Observación del profesional (siempre - no la responde el entrevistado) ----
+  { id:'Q63_Infraestructura', section:12, profesional:true, label:'63. Infraestructura', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q64_Accesibilidad', section:12, profesional:true, label:'64. Accesibilidad', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q65_Senalizacion', section:12, profesional:true, label:'65. Señalización', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q66_Higiene', section:12, profesional:true, label:'66. Higiene', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q67_Seguridad', section:12, profesional:true, label:'67. Seguridad', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q68_AtencionVisitante', section:12, profesional:true, label:'68. Atención al visitante', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q69_CalidadProducto', section:12, profesional:true, label:'69. Calidad del producto/servicio', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q70_CapacidadRecibir', section:12, profesional:true, label:'70. Capacidad para recibir visitantes', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q71_Sostenibilidad', section:12, profesional:true, label:'71. Sostenibilidad', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q72_GestionResiduos', section:12, profesional:true, label:'72. Gestión de residuos', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q73_AhorroAguaEnergiaEval', section:12, profesional:true, label:'73. Manejo/ahorro de agua y energía', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q74_PotencialRuta', section:12, profesional:true, label:'74. Potencial para integrarse a una ruta', type:'select', options:['Bueno','Regular','Deficiente','No aplica'] },
+  { id:'Q75_PotencialTuristico', section:12, profesional:true, label:'75. Calificación del potencial turístico', type:'select', options:['Alto','Medio','Bajo','No aplica'] },
+  { id:'Q76_IntegraDirectorio', section:12, profesional:true, label:'76. ¿Debe integrar el Directorio Turístico?', type:'select',
+    options:['Sí, como actor turístico.','Sí, como actor complementario.','Sí, como atractivo o recurso turístico.','Sí, como actor potencial.','No actualmente.','Pendiente de validación.'] },
+  { id:'Q77_RecomiendaRuta', section:12, profesional:true, label:'77. ¿Recomienda integrar a una ruta turística?', type:'select',
+    options:['Sí, directamente.','Sí, requiere fortalecimiento previo.','Potencialmente.','No por ahora.','No aplica.'] },
+  { id:'Q78_ObservacionProfesional', section:12, profesional:true, label:'78. Observación y concepto técnico (fortaleza, oportunidad, dificultad, ¿2da visita?, evidencia)', type:'textarea' },
+
+  // ---- Sección 12b: Evidencias (siempre) ----
+  { id:'Q79_FotoFachada', section:13, label:'79. Fotografía de la fachada o lugar (máx. 5)', type:'file', multiple:true },
+  { id:'Q80_FotoProducto', section:13, label:'80. Fotografía del producto/servicio (máx. 5)', type:'file', multiple:true },
+  { id:'Q81_FotoEntorno', section:13, label:'81. Fotografía del entorno (máx. 5)', type:'file', multiple:true },
+  { id:'Q82_EvidenciaDocumental', section:13, label:'82. Evidencia documental adicional (opcional, máx. 5)', type:'file', multiple:true },
+  { id:'Q83_Firma', section:13, label:'83. Firma', type:'file' }
+];
+
+var CARACT_SECTION_TITLES = {
+  2:'📋 Control de la visita', 3:'🎯 Filtro de vinculación turística (5 preguntas clave)',
+  4:'🏃 Actividad y trayectoria', 5:'💡 Oferta y potencial turístico', 6:'👥 Visitantes y demanda',
+  7:'📣 Promoción y ventas digitales', 8:'💰 Economía, empleo y aporte local', 9:'🌱 Sostenibilidad ambiental',
+  10:'⚖️ Formalización', 11:'🆘 Necesidades del visitante y articulación', 12:'📝 Observación del profesional',
+  13:'📸 Evidencias'
+};
+
+// Determina el "nivel de vínculo turístico" a partir de las 5 preguntas filtro (Q11-Q15)
+// NOTA para Jose: esta es mi interpretación de la lógica de salto del documento.
+// Revísala y ajusta los criterios si no coincide con lo que necesitas.
+function evaluarNivelVinculo(resp) {
+  var negativos = ['No actualmente.','No.','No está seguro/a.'];
+  var cantidadNegativos = ['Q11_RecibeVisitantes','Q12_OfreceAlgoInteres','Q13_VisitantesCompran','Q14_ProductoParaTuristas','Q15_PodriaIntegrarseRuta']
+    .filter(function(id){ return negativos.indexOf(resp[id]) !== -1; }).length;
+  if (cantidadNegativos >= 4) return 'sin_vinculo';       // Sección 3 -> directo a Necesidades/Observación/Evidencias
+  if (cantidadNegativos >= 2) return 'potencial';          // Sección 3 -> Actividad, Oferta, Sostenibilidad, Formalización, Necesidades, Observación, Evidencias
+  return 'activo';                                          // Sección 3 -> todo el formulario completo
+}
+
+function seccionVisible(showIf, nivel) {
+  if (!showIf) return true;
+  if (showIf === 'activo') return nivel === 'activo';
+  if (showIf === 'potencial_o_activo') return nivel === 'potencial' || nivel === 'activo';
+  return true;
+}
+
+function renderCampoCaracterizacion(q, valorActual) {
+  var val = valorActual || '';
+  if (q.type === 'date' && val) { val = soloFechaISO(val); }
+  if (q.type === 'text' || q.type === 'number' || q.type === 'date') {
+    return '<input type="'+q.type+'" id="carac-'+q.id+'" value="'+escapeHtml(String(val))+'">';
+  }
+  if (q.type === 'textarea') {
+    return '<textarea id="carac-'+q.id+'">'+escapeHtml(String(val))+'</textarea>';
+  }
+  if (q.type === 'select') {
+    return '<select id="carac-'+q.id+'">' + '<option value="">Seleccionar...</option>' +
+      q.options.map(function(o){ return '<option value="'+escapeHtml(o)+'"'+(val===o?' selected':'')+'>'+escapeHtml(o)+'</option>'; }).join('') +
+      '</select>';
+  }
+  if (q.type === 'checkbox') {
+    var seleccionados = String(val).split(',').map(function(s){return s.trim();});
+    return '<div class="carac-check-list">' + q.options.map(function(o, idx){
+      var checked = seleccionados.indexOf(o) !== -1 ? ' checked' : '';
+      return '<label class="carac-check-item">' +
+        '<input type="checkbox" class="carac-chk-'+q.id+'" value="'+escapeHtml(o)+'"'+checked+'> '+escapeHtml(o)+'</label>';
+    }).join('') + '</div>';
+  }
+  if (q.type === 'file') {
+    var enlacesHtml = '';
+    if (val) {
+      var urlsGuardadas = String(val).split(',').map(function(s){return s.trim();}).filter(Boolean);
+      enlacesHtml = urlsGuardadas.map(function(u, idx){
+        return '<div style="margin-bottom:2px;"><a href="'+escapeHtml(u)+'" target="_blank">Ver archivo'+(urlsGuardadas.length>1?(' '+(idx+1)):'')+' ↗</a></div>';
+      }).join('');
+    }
+    var atributoMultiple = q.multiple ? ' multiple' : '';
+    return enlacesHtml + '<input type="file" id="carac-'+q.id+'" accept="image/*,.pdf"'+atributoMultiple+'>';
+  }
+  return '';
+}
+
+function renderFormularioCaracterizacion(consecutivo, datosExistentes) {
+  var nivel = evaluarNivelVinculo(datosExistentes || {});
+  var secciones = {};
+  CARACT_QUESTIONS.forEach(function(q){
+    if (!seccionVisible(q.showIf, nivel)) return;
+    secciones[q.section] = secciones[q.section] || [];
+    secciones[q.section].push(q);
+  });
+
+  var html = Object.keys(secciones).sort(function(a,b){return a-b;}).map(function(sec){
+    var campos = secciones[sec].map(function(q){
+      var esFull = (q.type === 'textarea' || q.type === 'checkbox' || q.type === 'file');
+      return '<div class="detail-item'+(esFull?' detail-item-full':'')+'"><div class="detail-label">'+escapeHtml(q.label)+(q.required?' *':'')+'</div>' +
+        renderCampoCaracterizacion(q, (datosExistentes||{})[q.id]) + '</div>';
+    }).join('');
+    return '<div class="detail-section"><div class="detail-section-title">'+CARACT_SECTION_TITLES[sec]+'</div>' +
+      '<div class="carac-grid">'+campos+'</div></div>';
+  }).join('');
+
+  var yaTeniaDatos = datosExistentes && String(datosExistentes.EstadoFicha || '').trim() === 'Completada';
+  var botonCancelar = yaTeniaDatos
+    ? ' <button class="btn" style="width:auto;background:#fff;border:1px solid var(--line);color:var(--muted);" onclick="mostrarFichaConsulta(\''+consecutivo+'\')">↩ Cancelar</button>'
+    : '';
+
+  return '<div id="caracForm-'+consecutivo+'">' + html +
+    '<div style="margin-top:14px;"><button class="btn btn-primary" style="width:auto;" onclick="guardarFichaCaracterizacion(\''+consecutivo+'\')">💾 Guardar ficha</button>' +
+    botonCancelar +
+    '<div class="approval-msg" id="caracMsg-'+consecutivo+'"></div></div></div>';
+}
+
+var CARAC_CACHE = {};
+
+function soloFechaISO(val) {
+  // Convierte "2026-08-20T05:00:00.000Z" (o cualquier ISO) a "2026-08-20"
+  return String(val).split('T')[0];
+}
+
+function fechaLegible(val) {
+  var soloFecha = soloFechaISO(val);
+  var partes = soloFecha.split('-');
+  if (partes.length === 3) return partes[2] + '/' + partes[1] + '/' + partes[0];
+  return soloFecha;
+}
+
+function formatoValorConsulta(q, val) {
+  if (val === undefined || val === null || String(val).trim() === '') {
+    return '<span class="cell-empty">N/A</span>';
+  }
+  if (q.type === 'date') {
+    return escapeHtml(fechaLegible(val));
+  }
+  if (q.type === 'file') {
+    var urls = String(val).split(',').map(function(s){return s.trim();}).filter(Boolean);
+    return urls.map(function(u, idx){
+      return '<a href="'+escapeHtml(u)+'" target="_blank">Ver archivo'+(urls.length>1?(' '+(idx+1)):'')+' ↗</a>';
+    }).join('<br>');
+  }
+  return escapeHtml(String(val));
+}
+
+function renderFichaConsulta(consecutivo, datos) {
+  var nivel = evaluarNivelVinculo(datos || {});
+  var secciones = {};
+  CARACT_QUESTIONS.forEach(function(q){
+    if (!seccionVisible(q.showIf, nivel)) return;
+    secciones[q.section] = secciones[q.section] || [];
+    secciones[q.section].push(q);
+  });
+
+  var html = Object.keys(secciones).sort(function(a,b){return a-b;}).map(function(sec){
+    var campos = secciones[sec].map(function(q){
+      return '<div class="detail-item"><div class="detail-label">'+escapeHtml(q.label)+'</div>' +
+        '<div class="detail-value">'+formatoValorConsulta(q, (datos||{})[q.id])+'</div></div>';
+    }).join('');
+    return '<div class="detail-section"><div class="detail-section-title">'+CARACT_SECTION_TITLES[sec]+'</div>' +
+      '<div class="carac-grid">'+campos+'</div></div>';
+  }).join('');
+
+  var linkPdf = (datos && datos.PDF_Ficha)
+    ? '<div style="margin-bottom:14px;"><a href="'+escapeHtml(String(datos.PDF_Ficha))+'" target="_blank" class="btn btn-primary" style="width:auto;display:inline-flex;">📄 Ver PDF de la ficha ↗</a></div>'
+    : '';
+
+  return '<div>' + linkPdf + html +
+    '<div style="margin-top:14px;"><button class="btn btn-primary" style="width:auto;" onclick="mostrarFormularioEdicion(\''+consecutivo+'\')">✏️ Volver a llenar</button></div></div>';
+}
+
+function mostrarFormularioEdicion(consecutivo) {
+  var contenedor = document.getElementById('caracContainer-' + consecutivo);
+  var datos = (CARAC_CACHE[consecutivo] || {}).caracterizacion || {};
+  contenedor.innerHTML = renderFormularioCaracterizacion(consecutivo, datos);
+}
+
+function mostrarFichaConsulta(consecutivo) {
+  var contenedor = document.getElementById('caracContainer-' + consecutivo);
+  var datos = (CARAC_CACHE[consecutivo] || {}).caracterizacion || {};
+  contenedor.innerHTML = renderFichaConsulta(consecutivo, datos);
+}
+
+// Se llama cuando el colaborador abre por primera vez el acordeón "Ficha de Caracterización"
+function abrirFichaCaracterizacion(consecutivo) {
+  var contenedor = document.getElementById('caracContainer-' + consecutivo);
+  contenedor.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Cargando ficha...</div>';
+
+  fetch(WEBAPP_URL + '?accion=buscarConsecutivo&consecutivo=' + encodeURIComponent(consecutivo))
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      if (!resp.ok) { contenedor.innerHTML = '<div class="alert-error">⚠️ '+resp.error+'</div>'; return; }
+      CARAC_CACHE[consecutivo] = resp;
+      var yaCompletada = resp.caracterizacion && String(resp.caracterizacion.EstadoFicha || '').trim() === 'Completada';
+      contenedor.innerHTML = yaCompletada
+        ? renderFichaConsulta(consecutivo, resp.caracterizacion)
+        : renderFormularioCaracterizacion(consecutivo, resp.caracterizacion);
+    })
+    .catch(function(err){
+      contenedor.innerHTML = '<div class="alert-error">⚠️ Error de conexión: '+err.message+'</div>';
+    });
+}
+
+function leerArchivosBase64(inputId, multiple, etiquetaCampo) {
+  return new Promise(function(resolve, reject){
+    var input = document.getElementById(inputId);
+    if (!input || !input.files || !input.files.length) { resolve(multiple ? [] : null); return; }
+
+    var archivos = Array.prototype.slice.call(input.files);
+
+    if (multiple && archivos.length > 5) {
+      reject(new Error('Máximo 5 archivos en "'+etiquetaCampo+'" (subiste '+archivos.length+').'));
+      return;
+    }
+    if (!multiple) archivos = archivos.slice(0, 1);
+
+    Promise.all(archivos.map(function(file){
+      return new Promise(function(res){
+        var reader = new FileReader();
+        reader.onload = function(){
+          res({ nombre: file.name, tipo: file.type, base64: reader.result.split(',')[1] });
+        };
+        reader.readAsDataURL(file);
+      });
+    })).then(function(lista){
+      resolve(multiple ? lista : (lista[0] || null));
+    });
+  });
+}
+
+function guardarFichaCaracterizacion(consecutivo) {
+  var msg = document.getElementById('caracMsg-' + consecutivo);
+  msg.textContent = ''; msg.className = 'approval-msg';
+
+  var respuestas = {};
+  var pendientesArchivos = [];
+  var erroresArchivos = [];
+
+  CARACT_QUESTIONS.forEach(function(q){
+    if (q.type === 'checkbox') {
+      var marcados = Array.prototype.slice.call(document.querySelectorAll('.carac-chk-'+q.id+':checked')).map(function(c){return c.value;});
+      if (marcados.length) respuestas[q.id] = marcados.join(', ');
+    } else if (q.type === 'file') {
+      pendientesArchivos.push(
+        leerArchivosBase64('carac-'+q.id, !!q.multiple, q.label)
+          .then(function(resultado){
+            var hayArchivo = q.multiple ? (resultado && resultado.length) : !!resultado;
+            if (hayArchivo) respuestas[q.id] = resultado;
+          })
+          .catch(function(err){ erroresArchivos.push(err.message); })
+      );
+    } else {
+      var el = document.getElementById('carac-'+q.id);
+      if (el && el.value) respuestas[q.id] = el.value;
+    }
+  });
+
+  mostrarOverlay('Guardando ficha...');
+
+  Promise.all(pendientesArchivos).then(function(){
+    if (erroresArchivos.length) {
+      ocultarOverlay();
+      msg.textContent = '⚠️ ' + erroresArchivos.join(' | ');
+      msg.classList.add('err');
+      return;
+    }
+
+    fetch(WEBAPP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ accion: 'guardarCaracterizacion', consecutivo: consecutivo, respuestas: respuestas })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(resp){
+        if (!resp.ok) {
+          ocultarOverlay();
+          msg.textContent = resp.error || 'No se pudo guardar.'; msg.classList.add('err');
+          return;
+        }
+        actualizarOverlay('✅ Registro guardado con éxito');
+        setTimeout(function(){
+          window.location.reload();
+        }, 1300);
+      })
+      .catch(function(err){
+        ocultarOverlay();
+        msg.textContent = 'Error de conexión: ' + err.message; msg.classList.add('err');
+      });
+  });
+}
+
+function mostrarOverlay(texto) {
+  document.getElementById('globalOverlayText').textContent = texto;
+  document.getElementById('globalOverlay').classList.add('show');
+}
+function actualizarOverlay(texto) {
+  document.getElementById('globalOverlayText').textContent = texto;
+}
+function ocultarOverlay() {
+  document.getElementById('globalOverlay').classList.remove('show');
+}
+
+function cerrarTodosLosAcordeones() {
+  document.querySelectorAll('.acc-header.open').forEach(function(h){ h.classList.remove('open'); });
+  document.querySelectorAll('.acc-detail.open').forEach(function(d){ d.classList.remove('open'); });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function toggleAcc(id) {
