@@ -1258,6 +1258,45 @@ function abrirFichaCaracterizacion(consecutivo) {
     });
 }
 
+// Comprime una imagen (redimensiona a máx. 1600px y la reexporta como JPG
+// calidad 75%) antes de subirla — reduce mucho el tamaño en fotos de celular.
+// Los archivos que no son imagen (PDF, etc.) pasan sin tocar.
+function comprimirImagenSiAplica_(file) {
+  return new Promise(function(resolve){
+    if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+      resolve(file);
+      return;
+    }
+    var ANCHO_MAX = 1600;
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+
+    img.onload = function(){
+      URL.revokeObjectURL(url);
+      var w = img.width, h = img.height;
+
+      if (w <= ANCHO_MAX && h <= ANCHO_MAX) {
+        resolve(file); // ya es pequeña, no vale la pena recomprimir
+        return;
+      }
+      if (w > h) { h = Math.round(h * ANCHO_MAX / w); w = ANCHO_MAX; }
+      else { w = Math.round(w * ANCHO_MAX / h); h = ANCHO_MAX; }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(function(blob){
+        if (!blob) { resolve(file); return; }
+        var nombreComprimido = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        resolve(new File([blob], nombreComprimido, { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.75);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 function leerArchivosBase64(inputId, multiple, etiquetaCampo) {
   return new Promise(function(resolve, reject){
     var input = document.getElementById(inputId);
@@ -1272,12 +1311,14 @@ function leerArchivosBase64(inputId, multiple, etiquetaCampo) {
     if (!multiple) archivos = archivos.slice(0, 1);
 
     Promise.all(archivos.map(function(file){
-      return new Promise(function(res){
-        var reader = new FileReader();
-        reader.onload = function(){
-          res({ nombre: file.name, tipo: file.type, base64: reader.result.split(',')[1] });
-        };
-        reader.readAsDataURL(file);
+      return comprimirImagenSiAplica_(file).then(function(archivoFinal){
+        return new Promise(function(res){
+          var reader = new FileReader();
+          reader.onload = function(){
+            res({ nombre: archivoFinal.name, tipo: archivoFinal.type, base64: reader.result.split(',')[1] });
+          };
+          reader.readAsDataURL(archivoFinal);
+        });
       });
     })).then(function(lista){
       resolve(multiple ? lista : (lista[0] || null));
@@ -1312,7 +1353,7 @@ function guardarFichaCaracterizacion(consecutivo) {
     }
   });
 
-  mostrarOverlay('Guardando ficha...');
+  mostrarOverlay('Procesando fotos y guardando ficha...');
 
   Promise.all(pendientesArchivos).then(function(){
     if (erroresArchivos.length) {
